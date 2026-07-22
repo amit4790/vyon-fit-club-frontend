@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply bg-bg-primary text-text-primary font-sans antialiased;
+}
+
+/* ============================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================ */
+
+@layer components {
+  .page-title {
+    @apply text-page-title font-bold text-text-primary;
+  }
+
+  .section-title {
+    @apply text-section-title font-semibold text-text-primary;
+  }
+
+  .card-title {
+    @apply text-card-title font-semibold text-text-primary;
+  }
+
+  .body {
+    @apply text-body text-text-secondary;
+  }
+
+  .caption {
+    @apply text-caption text-text-secondary;
+  }
+
+  .label {
+    @apply text-label text-text-secondary uppercase tracking-wider;
+  }
+
+  /* ============================================================
+     BUTTON COMPONENTS
+     ============================================================ */
+
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark active:scale-95;
+    @apply focus:ring-offset-bg-secondary focus:ring-primary;
+  }
+
+  .btn-secondary {
+    @apply btn bg-bg-card text-text-primary border border-border-light hover:bg-bg-secondary active:scale-95;
+    @apply focus:ring-offset-bg-secondary focus:ring-primary;
+  }
+
+  .btn-outline {
+    @apply btn bg-transparent text-primary border border-primary hover:bg-primary hover:text-white active:scale-95;
+    @apply focus:ring-offset-bg-secondary focus:ring-primary;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger text-white hover:bg-red-700 active:scale-95;
+    @apply focus:ring-offset-bg-secondary focus:ring-danger;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* ============================================================
+     CARD COMPONENTS
+     ============================================================ */
+
+  .card {
+    @apply bg-bg-card border border-border-light rounded-lg p-6 shadow-card transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover hover:border-accent;
+  }
+
+  .stat-card {
+    @apply card flex flex-col gap-3;
+  }
+
+  .dashboard-card {
+    @apply card;
+  }
+
+  /* ============================================================
+     INPUT COMPONENTS
+     ============================================================ */
+
+  .input-base {
+    @apply w-full bg-bg-secondary border border-border-light rounded-lg px-4 py-2.5;
+    @apply text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+
+  .input-text {
+    @apply input-base;
+  }
+
+  .input-password {
+    @apply input-base;
+  }
+
+  .input-search {
+    @apply input-base;
+  }
+
+  .select {
+    @apply input-base cursor-pointer;
+  }
+
+  /* ============================================================
+     BADGE COMPONENTS
+     ============================================================ */
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-label font-medium;
+  }
+
+  .badge-active {
+    @apply bg-success bg-opacity-20 text-success;
+  }
+
+  .badge-expired {
+    @apply bg-danger bg-opacity-20 text-danger;
+  }
+
+  .badge-pending {
+    @apply bg-warning bg-opacity-20 text-warning;
+  }
+
+  .badge-success {
+    @apply bg-success bg-opacity-20 text-success;
+  }
+
+  /* ============================================================
+     TABLE STYLES
+     ============================================================ */
+
+  .table-wrapper {
+    @apply w-full overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full;
+  }
+
+  .table-header {
+    @apply bg-bg-secondary border-b border-border-light;
+  }
+
+  .table-header-cell {
+    @apply px-6 py-3 text-left label text-text-secondary;
+  }
+
+  .table-body-row {
+    @apply border-b border-border-light hover:bg-bg-secondary transition-colors duration-200;
+  }
+
+  .table-body-cell {
+    @apply px-6 py-4 text-body;
+  }
+
+  /* ============================================================
+     LOADING & SKELETON
+     ============================================================ */
+
+  .spinner {
+    @apply inline-block animate-spin-slow;
+  }
+
+  .skeleton {
+    @apply bg-bg-secondary rounded-lg animate-pulse;
+  }
+
+  /* ============================================================
+     MISCELLANEOUS
+     ============================================================ */
+
+  .divider {
+    @apply border-t border-border-light;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A2E;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A3E;
+}
