@@ -15,6 +15,57 @@ export interface Member extends User {
   status: 'active' | 'inactive' | 'suspended'
 }
 
+export interface MemberRecord {
+  id: number
+  full_name: string
+  mobile_number: string
+  joining_date: string
+  status: 'active' | 'inactive'
+  email?: string | null
+  date_of_birth?: string | null
+  gender?: 'male' | 'female' | 'other' | null
+  address?: string | null
+  emergency_contact?: string | null
+  emergency_phone?: string | null
+  notes?: string | null
+}
+
+export interface MemberPayload {
+  full_name: string
+  mobile_number: string
+  joining_date?: string
+  status?: 'active' | 'inactive'
+  email?: string | null
+  date_of_birth?: string | null
+  gender?: 'male' | 'female' | 'other' | null
+  address?: string | null
+  emergency_contact?: string | null
+  emergency_phone?: string | null
+  notes?: string | null
+}
+
+export interface MemberListPagination {
+  page: number
+  page_size: number
+  total_items: number
+  total_pages: number
+}
+
+export interface MemberListApiResponse {
+  message: string
+  data: MemberRecord[]
+  pagination: MemberListPagination
+}
+
+export interface MemberOperationApiResponse {
+  message: string
+  data: MemberRecord
+}
+
+export interface MemberDeleteApiResponse {
+  message: string
+}
+
 export interface Trainer extends User {
   specialization: string
   clients: number

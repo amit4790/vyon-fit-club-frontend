@@ -2,15 +2,40 @@
  * Admin API service
  */
 
-import { get } from '../api/api'
-import { ApiResponse } from '../types'
+import { httpClient } from '../api/http-client'
+import {
+  MemberDeleteApiResponse,
+  MemberListApiResponse,
+  MemberOperationApiResponse,
+  MemberPayload,
+} from '../types'
 
 export const adminService = {
-  getDashboard: () => get('/api/admin/dashboard'),
+  getDashboard: () => httpClient.get('/dashboard/admin'),
 
-  getMembers: () => get('/api/admin/members'),
+  getMembers: (params: { page: number; pageSize: number; search?: string }) => {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      page_size: params.pageSize.toString(),
+    })
 
-  getTrainers: () => get('/api/admin/trainers'),
+    if (params.search?.trim()) {
+      query.set('search', params.search.trim())
+    }
 
-  getClasses: () => get('/api/admin/classes'),
+    return httpClient.get<MemberListApiResponse>(`/admin/members?${query.toString()}`)
+  },
+
+  createMember: (payload: MemberPayload) =>
+    httpClient.post<MemberOperationApiResponse>('/admin/members', payload),
+
+  updateMember: (memberId: number, payload: Partial<MemberPayload>) =>
+    httpClient.put<MemberOperationApiResponse>(`/admin/members/${memberId}`, payload),
+
+  deleteMember: (memberId: number) =>
+    httpClient.delete<MemberDeleteApiResponse>(`/admin/members/${memberId}`),
+
+  getTrainers: () => httpClient.get('/admin/trainers'),
+
+  getClasses: () => httpClient.get('/admin/classes'),
 }
