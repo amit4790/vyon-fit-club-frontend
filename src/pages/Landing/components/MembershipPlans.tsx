@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Membership Plans Section
  * Four premium pricing tiers
  */
@@ -34,7 +34,7 @@ const PlanCard: React.FC<PlanProps> = ({
     >
       {/* Highlight Badge */}
       {highlighted && (
-        <div className="mb-4 inline-block px-3 py-1 bg-primary text-white rounded-full text-label">
+        <div className="mb-4 inline-block px-3 py-1 bg-primary text-text-secondary rounded-full text-label">
           Most Popular
         </div>
       )}
@@ -77,52 +77,52 @@ export const MembershipPlans: React.FC = () => {
 
   const plans = [
     {
-      name: 'Starter',
-      price: 1499,
-      currency: '₹',
-      billing: 'Monthly',
+      name: 'VYON BASIC',
+      price: 1800,
+      currency: 'INR ',
+      billing: '1 Month',
       features: [
-        'Gym access',
-        'Basic equipment',
-        'Member community',
-        'Mobile app access',
+        'Gym access during standard hours',
+        'Cardio and strength zones',
+        '1 onboarding session',
+        'Locker support',
       ],
     },
     {
-      name: 'Pro',
-      price: 3999,
-      currency: '₹',
-      billing: 'Quarterly',
+      name: 'VYON ADVANCE',
+      price: 2800,
+      currency: 'INR ',
+      billing: '1 Month',
       features: [
-        'Everything in Starter',
+        'Everything in BASIC',
         'Group classes',
+        'Monthly body composition tracking',
         'Nutrition guidance',
-        'Trainer consultation',
       ],
     },
     {
-      name: 'Elite',
-      price: 7499,
-      currency: '₹',
-      billing: 'Half Year',
+      name: 'VYON PRO',
+      price: 4200,
+      currency: 'INR ',
+      billing: '1 Month',
       features: [
-        'Everything in Pro',
-        'Personal training (4/month)',
-        'Fitness assessment',
+        'Everything in ADVANCE',
+        '2 personal training sessions/month',
+        'Recovery consultation',
         'Priority support',
       ],
       highlighted: true,
     },
     {
-      name: 'Ultimate',
-      price: 13999,
-      currency: '₹',
-      billing: 'Annual',
+      name: 'Quarterly Variants',
+      price: 5000,
+      currency: 'INR ',
+      billing: 'Starts from 3 Months',
       features: [
-        'Everything in Elite',
-        'Unlimited personal training',
-        'Nutrition plan',
-        'VIP lounge access',
+        'BASIC 3M, ADVANCE 3M, PRO 3M',
+        'Lower effective monthly price',
+        'Same benefits as monthly variants',
+        'Best for continuity and consistency',
       ],
     },
   ]
@@ -134,7 +134,7 @@ export const MembershipPlans: React.FC = () => {
         <div className="text-center mb-16">
           <h2 className="section-title mb-4">MEMBERSHIP PLANS</h2>
           <p className="body text-text-secondary max-w-2xl mx-auto">
-            Choose the perfect plan for your fitness journey
+            Base prices shown below. GST at 5% is applied during checkout.
           </p>
         </div>
 
@@ -144,7 +144,7 @@ export const MembershipPlans: React.FC = () => {
             <PlanCard
               key={i}
               {...plan}
-              onJoinClick={() => navigate('/register')}
+              onJoinClick={() => navigate('/memberships')}
             />
           ))}
         </div>
@@ -152,3 +152,4 @@ export const MembershipPlans: React.FC = () => {
     </section>
   )
 }
+

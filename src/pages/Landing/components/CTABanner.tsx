@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CTA Banner Section
  * Call to action with banner image
  */
@@ -25,7 +25,7 @@ export const CTABanner: React.FC = () => {
       {/* Content */}
       <div className="relative h-full flex items-center justify-center">
         <div className="text-center max-w-2xl px-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">
+          <h2 className="text-4xl md:text-5xl font-bold text-text-secondary mb-8 leading-tight">
             YOUR STRONGEST SELF STARTS TODAY.
           </h2>
 
@@ -48,3 +48,4 @@ export const CTABanner: React.FC = () => {
     </section>
   )
 }
+

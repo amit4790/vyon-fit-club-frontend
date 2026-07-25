@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Registration Page
  * User registration with selected membership plan
  */
@@ -9,11 +9,16 @@ import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
 
 interface MembershipPlan {
-  id: string
+  plan_id: number
+  family: string
   name: string
-  price: number
-  billing: string
+  variant: string | null
+  duration_label: string
   features: string[]
+  base_price: number
+  tax_percent: number
+  tax_amount: number
+  total_price: number
   isPopular?: boolean
 }
 
@@ -134,7 +139,7 @@ export default function Register() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
                   >
                     Create Account
                   </button>
@@ -157,6 +162,9 @@ export default function Register() {
                       <h4 className="text-2xl font-bold text-primary mb-2">
                         {selectedPlan.name}
                       </h4>
+                      <p className="text-text-secondary text-sm mb-2">
+                        {selectedPlan.variant || selectedPlan.duration_label}
+                      </p>
                       <p className="text-text-secondary text-sm">
                         {selectedPlan.features.length} features included
                       </p>
@@ -166,10 +174,11 @@ export default function Register() {
                     <div className="mb-6 pb-6 border-b border-border-light">
                       <div className="flex items-baseline gap-2">
                         <span className="text-4xl font-bold text-primary">
-                          ₹{selectedPlan.price}
+                          INR {selectedPlan.base_price.toLocaleString('en-IN')}
                         </span>
-                        <span className="text-text-secondary">{selectedPlan.billing}</span>
+                        <span className="text-text-secondary">/{selectedPlan.duration_label.toLowerCase()}</span>
                       </div>
+                      <p className="text-text-secondary text-xs mt-2">GST {selectedPlan.tax_percent}% applies at checkout</p>
                     </div>
 
                     {/* Key Features */}
@@ -180,7 +189,7 @@ export default function Register() {
                       <ul className="space-y-2">
                         {selectedPlan.features.slice(0, 3).map((feature, index) => (
                           <li key={index} className="text-text-secondary text-sm flex items-start gap-2">
-                            <span className="text-primary mt-1">✓</span>
+                            <span className="text-primary mt-1">+</span>
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -202,7 +211,7 @@ export default function Register() {
                     </p>
                     <button
                       onClick={() => navigate('/memberships')}
-                      className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-accent transition-all"
+                      className="w-full py-2 px-4 bg-primary text-text-secondary rounded-lg hover:bg-accent transition-all"
                     >
                       Select a Plan
                     </button>
@@ -219,3 +228,4 @@ export default function Register() {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Navbar Component
  * Top navigation bar for dashboard layouts
  */
@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button className="relative p-2 hover:bg-bg-card rounded-lg transition-colors">
             <Bell size={20} className="text-text-secondary hover:text-text-primary" />
             {notifications > 0 && (
-              <span className="absolute top-1 right-1 bg-danger rounded-full w-5 h-5 flex items-center justify-center text-xs text-white font-bold">
+              <span className="absolute top-1 right-1 bg-danger rounded-full w-5 h-5 flex items-center justify-center text-xs text-text-secondary font-bold">
                 {notifications}
               </span>
             )}
@@ -108,3 +108,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </div>
   )
 }
+

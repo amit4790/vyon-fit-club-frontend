@@ -1,17 +1,19 @@
-/**
+﻿/**
  * Landing Page Navbar
  * Sticky transparent navbar with premium branding
  * Logo increased by 10% with refined spacing
  */
 
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
+import { AuthService } from '../../../api/api'
 
 export const LandingNavbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,12 +27,35 @@ export const LandingNavbar: React.FC = () => {
   const handleNavClick = (target: string) => {
     setIsMobileMenuOpen(false)
     if (target.startsWith('#')) {
+      if (location.pathname !== '/') {
+        navigate(`/${target}`)
+        return
+      }
       const element = document.getElementById(target.slice(1))
       element?.scrollIntoView({ behavior: 'smooth' })
     } else {
       navigate(target)
     }
   }
+
+  const getAuthenticatedHomePath = () => {
+    const role = AuthService.getUserRole()
+    if (role === 'admin') return '/admin/dashboard'
+    if (role === 'trainer') return '/trainer/dashboard'
+    if (role === 'member') return '/member/dashboard'
+    return '/login'
+  }
+
+  const handleAccountClick = () => {
+    setIsMobileMenuOpen(false)
+    if (AuthService.isAuthenticated()) {
+      navigate(getAuthenticatedHomePath())
+      return
+    }
+    navigate('/login')
+  }
+
+  const accountLabel = AuthService.isAuthenticated() ? 'My Page' : 'Login'
 
   const menuItems = [
     { label: 'Home', href: '#home' },
@@ -79,15 +104,15 @@ export const LandingNavbar: React.FC = () => {
 
           {/* Desktop Buttons - premium styling */}
           <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-            <Link
-              to="/login"
+            <button
+              onClick={handleAccountClick}
               className="px-6 py-2 border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
             >
-              Login
-            </Link>
+              {accountLabel}
+            </button>
             <button
               onClick={() => navigate('/register')}
-              className="px-6 py-2 bg-primary hover:bg-accent text-white rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="px-6 py-2 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               Join Now
             </button>
@@ -116,19 +141,18 @@ export const LandingNavbar: React.FC = () => {
                 </button>
               ))}
               <div className="flex gap-3 pt-6 border-t border-border-light">
-                <Link
-                  to="/login"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                <button
+                  onClick={handleAccountClick}
                   className="flex-1 px-4 py-3 border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide text-center"
                 >
-                  Login
-                </Link>
+                  {accountLabel}
+                </button>
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false)
                     navigate('/register')
                   }}
-                  className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-white rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
+                  className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
                 >
                   Join Now
                 </button>
@@ -140,3 +164,4 @@ export const LandingNavbar: React.FC = () => {
     </nav>
   )
 }
+

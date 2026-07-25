@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -55,7 +55,7 @@ body {
   }
 
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-dark active:scale-95;
+    @apply btn bg-primary text-text-secondary hover:bg-primary-dark active:scale-95;
     @apply focus:ring-offset-bg-secondary focus:ring-primary;
   }
 
@@ -65,12 +65,12 @@ body {
   }
 
   .btn-outline {
-    @apply btn bg-transparent text-primary border border-primary hover:bg-primary hover:text-white active:scale-95;
+    @apply btn bg-transparent text-primary border border-primary hover:bg-primary hover:text-text-secondary active:scale-95;
     @apply focus:ring-offset-bg-secondary focus:ring-primary;
   }
 
   .btn-danger {
-    @apply btn bg-danger text-white hover:bg-red-700 active:scale-95;
+    @apply btn bg-danger text-text-secondary hover:bg-red-700 active:scale-95;
     @apply focus:ring-offset-bg-secondary focus:ring-danger;
   }
 
@@ -226,3 +226,4 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #3A3A3E;
 }
+

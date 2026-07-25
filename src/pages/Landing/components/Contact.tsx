@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contact Section
  * Contact information and map
  */
@@ -71,7 +71,7 @@ export const Contact: React.FC = () => {
                 {socials.map((social, i) => (
                   <button
                     key={i}
-                    className="p-3 bg-bg-secondary hover:bg-primary hover:text-white rounded-lg transition-all duration-300"
+                    className="p-3 bg-bg-secondary hover:bg-primary hover:text-text-secondary rounded-lg transition-all duration-300"
                     title={social.label}
                   >
                     {social.icon}
@@ -95,3 +95,4 @@ export const Contact: React.FC = () => {
     </section>
   )
 }
+

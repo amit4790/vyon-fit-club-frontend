@@ -4,7 +4,7 @@
  * Matches Landing Page design system
  */
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { AuthService, LoginRequest } from '../../api/api'
 import { ApiErrorHandler } from '../../api/errors'
@@ -27,6 +27,25 @@ export default function Login() {
     message: '',
     type: 'error',
   })
+
+  useEffect(() => {
+    if (!AuthService.isAuthenticated()) {
+      return
+    }
+
+    const role = AuthService.getUserRole()
+    if (role === 'admin') {
+      navigate('/admin/dashboard', { replace: true })
+      return
+    }
+    if (role === 'trainer') {
+      navigate('/trainer/dashboard', { replace: true })
+      return
+    }
+    if (role === 'member') {
+      navigate('/member/dashboard', { replace: true })
+    }
+  }, [navigate])
 
   const showToast = (message: string, type: 'success' | 'error' = 'error') => {
     setToast({ show: true, message, type })

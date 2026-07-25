@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hero Section
  * Full-screen hero with background image, premium typography and CTA
  * Refined for luxury brand aesthetic with visible background logo
@@ -81,14 +81,14 @@ export const Hero: React.FC = () => {
         >
           <button
             onClick={() => navigate('/register')}
-            className="group relative px-8 py-4 md:px-10 md:py-5 bg-primary hover:bg-accent text-white font-semibold text-base rounded-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
+            className="group relative px-8 py-4 md:px-10 md:py-5 bg-primary hover:bg-accent text-text-secondary font-semibold text-base rounded-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
           >
             Start Your Fitness Journey
             <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 rounded-lg transition-opacity" />
           </button>
           <button
             onClick={() => navigate('/memberships')}
-            className="group relative px-8 py-4 md:px-10 md:py-5 border-2 border-white text-white font-semibold text-base rounded-lg hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+            className="group relative px-8 py-4 md:px-10 md:py-5 border-2 border-white text-text-secondary font-semibold text-base rounded-lg hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
           >
             Explore Memberships
             <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 rounded-lg transition-opacity" />
@@ -119,10 +119,10 @@ export const Hero: React.FC = () => {
               ))}
             </div>
             <span className="text-gray-200 font-light">4.9 Rating</span>
-            <span className="hidden sm:inline text-gray-500">•</span>
+            <span className="hidden sm:inline text-gray-500">|</span>
             <span>500+ Active Members</span>
-            <span className="hidden sm:inline text-gray-500">•</span>
-            <span>Open Daily • 5 AM – 11 PM</span>
+            <span className="hidden sm:inline text-gray-500">|</span>
+            <span>Open Daily | 5 AM - 11 PM</span>
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@ export const Hero: React.FC = () => {
       >
         <button
           onClick={() => scrollToSection('stats')}
-          className="flex flex-col items-center gap-2 text-gray-300 hover:text-white transition-colors group"
+          className="flex flex-col items-center gap-2 text-gray-300 hover:text-text-secondary transition-colors group"
         >
           <span className="text-xs caption opacity-70 group-hover:opacity-100 transition-opacity">
             Scroll to explore
@@ -152,3 +152,4 @@ export const Hero: React.FC = () => {
     </section>
   )
 }
+

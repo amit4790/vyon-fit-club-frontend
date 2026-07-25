@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Personal Training Section
  * Personal coaching benefits
  */
@@ -34,7 +34,7 @@ export const PersonalTraining: React.FC = () => {
               {benefits.map((benefit, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <Check size={14} className="text-white" />
+                    <Check size={14} className="text-text-secondary" />
                   </div>
                   <span className="body">{benefit}</span>
                 </div>
@@ -58,3 +58,4 @@ export const PersonalTraining: React.FC = () => {
     </section>
   )
 }
+

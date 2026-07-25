@@ -1,4 +1,4 @@
-/**
+﻿/**
  * About Section
  * Facility overview with image and content
  */
@@ -53,7 +53,7 @@ export const About: React.FC = () => {
               {features.map((feature) => (
                 <div key={feature} className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <Check size={16} className="text-white" />
+                    <Check size={16} className="text-text-secondary" />
                   </div>
                   <span className="body">{feature}</span>
                 </div>
@@ -67,3 +67,4 @@ export const About: React.FC = () => {
     </section>
   )
 }
+

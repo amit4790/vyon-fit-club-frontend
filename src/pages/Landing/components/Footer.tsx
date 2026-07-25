@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Landing Page Footer
  * Footer with company info and links
  */
@@ -91,7 +91,7 @@ export const LandingFooter: React.FC = () => {
               {socials.map((social, i) => (
                 <button
                   key={i}
-                  className="p-2 bg-bg-card hover:bg-primary hover:text-white rounded-lg transition-all duration-300"
+                  className="p-2 bg-bg-card hover:bg-primary hover:text-text-secondary rounded-lg transition-all duration-300"
                   title={social.label}
                 >
                   {social.icon}
@@ -131,3 +131,4 @@ export const LandingFooter: React.FC = () => {
     </footer>
   )
 }
+

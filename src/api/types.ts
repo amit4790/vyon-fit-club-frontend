@@ -25,16 +25,17 @@ export interface LoginResponse {
 // Dashboard Types
 export interface RecentRegistration {
   name: string;
-  email: string;
+  email: string | null;
   registration_date: string;
 }
 
 export interface AdminDashboardResponse {
   total_members: number;
   active_members: number;
-  monthly_revenue: number;
-  expiring_memberships: number;
-  todays_checkins: number;
+  inactive_members?: number | null;
+  monthly_revenue: number | null;
+  expiring_memberships: number | null;
+  todays_checkins: number | null;
   recent_registrations: RecentRegistration[];
 }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Training Zones Gallery
  * Premium gallery of training areas
  */
@@ -26,9 +26,9 @@ const ZoneCard: React.FC<ZoneCardProps> = ({ title, description, image }) => {
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent group-hover:via-black/50 transition-all duration-300" />
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
+      <div className="absolute inset-0 flex flex-col justify-end p-6 text-text-secondary">
         <h3 className="text-xl font-bold mb-2">{title}</h3>
-        <p className="text-sm text-gray-300 group-hover:text-white transition-colors">
+        <p className="text-sm text-gray-300 group-hover:text-text-secondary transition-colors">
           {description}
         </p>
       </div>
@@ -76,3 +76,4 @@ export const TrainingZones: React.FC = () => {
     </section>
   )
 }
+
