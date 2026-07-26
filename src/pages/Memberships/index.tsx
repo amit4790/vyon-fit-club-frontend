@@ -1,19 +1,29 @@
-/**
+﻿/**
  * Membership Selection Page (Step 2 of Onboarding)
  * Choose membership plan - Matches Landing Page design
  */
 
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Check, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { ApiErrorHandler } from '../../api/errors'
 import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
+import { adminService } from '../../services/adminService'
+import { PlanFamilyRecord } from '../../types'
+import { formatCurrency, formatPlanDurationSuffix } from '../../utils/format'
 
-interface MembershipPlan {
-  id: string
+interface MembershipSelection {
+  plan_id: number
+  family: string
   name: string
-  price: number
-  billing: string
+  variant: string | null
+  duration_label: string
   features: string[]
+  base_price: number
+  tax_percent: number
+  tax_amount: number
+  total_price: number
   isPopular?: boolean
 }
 
@@ -37,51 +47,91 @@ export default function Memberships() {
   const location = useLocation()
   const state = location.state as LocationState | null
   const customerInfo = state?.customerInfo
+  const [plans, setPlans] = useState<PlanFamilyRecord[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const plans: MembershipPlan[] = [
-    {
-      id: 'starter',
-      name: 'Starter',
-      price: 1499,
-      billing: '/month',
-      features: [
-        'Gym Access',
-        'Locker Access',
-        'Fitness Assessment',
-        'Mobile App Access',
-      ],
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 2499,
-      billing: '/month',
-      features: [
-        'Everything in Starter',
-        'Group Classes',
-        'Diet Consultation',
-        'Priority Support',
-        'Nutrition Plan',
-      ],
-    },
-    {
-      id: 'elite',
-      name: 'Elite',
-      price: 3999,
-      billing: '/month',
-      features: [
-        'Everything in Premium',
-        'Personal Trainer',
-        'Body Composition Analysis',
-        'Unlimited Group Classes',
-        'Monthly Progress Review',
-        'VIP Lounge Access',
-      ],
-      isPopular: true,
-    },
-  ]
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setIsLoadingPlans(true)
+        setLoadError(null)
+        const response = await adminService.getPlanCatalog()
+        setPlans(response.data)
+      } catch (err: any) {
+        const apiError = ApiErrorHandler.parse(err)
+        setLoadError(apiError.message)
+      } finally {
+        setIsLoadingPlans(false)
+      }
+    }
 
-  const handleSelectPlan = (plan: MembershipPlan) => {
+    loadPlans()
+  }, [])
+
+  const getFamilyOrder = (name: string): number => {
+    const normalized = name.toUpperCase()
+    if (normalized.includes('BASIC')) return 1
+    if (normalized.includes('ADVANCE')) return 2
+    if (normalized.includes('PRO')) return 3
+    return 99
+  }
+
+  const rewriteFeatures = (familyName: string, features: string[]): string[] => {
+    const normalized = familyName.toUpperCase()
+    if (normalized.includes('BASIC')) {
+      return [
+        'Gym access during standard hours',
+        'Cardio and strength zones',
+        '1 onboarding session',
+        'Locker support',
+      ]
+    }
+    if (normalized.includes('ADVANCE')) {
+      return [
+        'All Basic plan features +',
+        'Group class access',
+        'Monthly body composition tracking',
+        'Nutrition guidance',
+      ]
+    }
+    if (normalized.includes('PRO')) {
+      return [
+        'All Advance plan features +',
+        '1:1 personal training sessions',
+        'Customized diet plan',
+        'Green Tea / Black Coffee',
+        'Passive Stretching',
+        'Foot Reflexology',
+      ]
+    }
+    return features
+  }
+
+  const allOptions = useMemo(() => {
+    const mapped: MembershipSelection[] = []
+    const orderedFamilies = [...plans].sort((a, b) => getFamilyOrder(a.family) - getFamilyOrder(b.family))
+    orderedFamilies.forEach((family, familyIndex) => {
+      family.options.forEach((option, optionIndex) => {
+        mapped.push({
+          plan_id: option.id,
+          family: family.family,
+          name: family.family,
+          variant: option.variant,
+          duration_label: option.duration_label,
+          features: rewriteFeatures(family.family, family.includes),
+          base_price: option.base_price,
+          tax_percent: option.tax_percent,
+          tax_amount: option.tax_amount,
+          total_price: option.total_price,
+          isPopular: familyIndex === 1 && optionIndex === 1,
+        })
+      })
+    })
+    return mapped
+  }, [plans])
+
+  const handleSelectPlan = (plan: MembershipSelection) => {
     navigate('/payment', {
       state: {
         customerInfo,
@@ -96,8 +146,8 @@ export default function Memberships() {
       <LandingNavbar />
 
       {/* Main Content */}
-      <main className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="py-12">
+        <div className="max-w-7xl mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/register')}
@@ -113,24 +163,40 @@ export default function Memberships() {
               Choose Your Membership
             </h1>
             <p className="text-base text-text-secondary max-w-2xl mx-auto">
-              Select the membership that best matches your fitness goals.
+              Select a plan. Prices shown are tax-exclusive and GST is added at checkout.
             </p>
           </section>
 
-          {/* Membership Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {plans.map((plan) => (
+          {isLoadingPlans && (
+            <p className="text-center text-text-secondary py-10">Loading membership plans...</p>
+          )}
+
+          {loadError && !isLoadingPlans && (
+            <div className="text-center py-10">
+              <p className="text-red-600 mb-4">{loadError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-lg border border-primary text-primary hover:bg-primary/10 transition-all"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!isLoadingPlans && !loadError && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {allOptions.map((plan) => (
               <div
-                key={plan.id}
+                key={plan.plan_id}
                 className={`relative bg-bg-card rounded-xl border transition-all duration-300 hover:shadow-lg hover:border-primary overflow-hidden ${
                   plan.isPopular
-                    ? 'md:scale-105 ring-2 ring-primary'
+                    ? 'md:scale-[1.02] ring-2 ring-primary'
                     : 'border-border-light'
                 }`}
               >
                 {/* Most Popular Badge */}
                 {plan.isPopular && (
-                  <div className="absolute -top-3 left-8 inline-block px-3 py-1 bg-gradient-to-r from-primary to-accent text-white rounded-full text-xs font-semibold z-10">
+                  <div className="absolute -top-3 left-8 inline-block px-3 py-1 bg-gradient-to-r from-primary to-accent text-text-secondary rounded-full text-xs font-semibold z-10">
                     Most Popular
                   </div>
                 )}
@@ -140,26 +206,29 @@ export default function Memberships() {
                   <h3 className="text-2xl font-bold text-text-primary mb-3">
                     {plan.name}
                   </h3>
+                  <p className="text-text-secondary text-sm mb-3">{plan.variant || plan.duration_label}</p>
 
                   {/* Price */}
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-bold text-primary">
-                        ₹{plan.price}
+                        {formatCurrency(plan.base_price)}
                       </span>
                       <span className="text-text-secondary text-sm">
-                        {plan.billing}
+                        {formatPlanDurationSuffix(plan.duration_label)}
                       </span>
                     </div>
+                    <p className="text-xs text-text-secondary mt-2">
+                      + GST {plan.tax_percent}% at checkout
+                    </p>
                   </div>
 
                   {/* Features */}
                   <ul className="space-y-3 mb-8 flex-grow">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <Check size={16} className="text-success flex-shrink-0 mt-1" />
                         <span className="text-text-secondary text-sm">
-                          {feature}
+                          • {feature}
                         </span>
                       </li>
                     ))}
@@ -170,7 +239,7 @@ export default function Memberships() {
                     onClick={() => handleSelectPlan(plan)}
                     className={`w-full py-2.5 px-4 rounded-lg font-semibold transition-all duration-300 uppercase tracking-wide text-sm ${
                       plan.isPopular
-                        ? 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:-translate-y-0.5'
+                        ? 'bg-gradient-to-r from-primary to-accent text-text-secondary hover:shadow-lg hover:-translate-y-0.5'
                         : 'border border-primary text-primary hover:bg-primary/10'
                     }`}
                   >
@@ -178,8 +247,9 @@ export default function Memberships() {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -188,3 +258,4 @@ export default function Memberships() {
     </div>
   )
 }
+

@@ -23,7 +23,7 @@ export default {
         },
         // Text
         text: {
-          primary: '#F5F5F5',
+          primary: '#C3C3C3',
           secondary: '#B8B8B8',
         },
         // Chrome/Neutral

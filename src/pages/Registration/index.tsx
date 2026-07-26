@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Registration Page (Step 1 of Onboarding)
  * Collect customer information only
  * Matches Landing Page design system
@@ -82,13 +82,16 @@ export default function Registration() {
   }
 
   return (
-    <div className="w-full bg-bg-primary">
+    <div className="relative w-full bg-bg-primary overflow-hidden">
+      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary/12 blur-3xl" />
+      <div className="pointer-events-none absolute top-32 right-[-7rem] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(0deg, rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)', backgroundSize: '36px 36px' }} />
       {/* Navigation */}
       <LandingNavbar />
 
       {/* Main Content */}
-      <main className="pt-20 pb-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="relative pt-20 pb-12">
+        <div className="max-w-lg mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/')}
@@ -99,7 +102,7 @@ export default function Registration() {
           </button>
 
           {/* Page Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-2">
               Create Your Account
             </h1>
@@ -109,8 +112,8 @@ export default function Registration() {
           </div>
 
           {/* Registration Form */}
-          <div className="bg-bg-card rounded-xl p-6 border border-border-light">
-            <form className="space-y-4">
+          <div className="bg-bg-card/95 backdrop-blur-sm rounded-xl p-5 border border-border-light shadow-card">
+            <form className="space-y-3.5">
               {/* Full Name */}
               <div>
                 <label className="block text-text-primary font-medium text-sm mb-1.5">
@@ -124,7 +127,7 @@ export default function Registration() {
                   placeholder="Enter your full name"
                   className={`w-full px-3 py-2 bg-bg-secondary border ${
                     errors.fullName ? 'border-red-500' : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.fullName && (
                   <p className="text-red-500 text-xs mt-0.5">{errors.fullName}</p>
@@ -144,7 +147,7 @@ export default function Registration() {
                   placeholder="your.email@example.com"
                   className={`w-full px-3 py-2 bg-bg-secondary border ${
                     errors.email ? 'border-red-500' : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.email && (
                   <p className="text-red-500 text-xs mt-0.5">{errors.email}</p>
@@ -164,7 +167,7 @@ export default function Registration() {
                   placeholder="+91 98765 43210"
                   className={`w-full px-3 py-2 bg-bg-secondary border ${
                     errors.phone ? 'border-red-500' : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-xs mt-0.5">{errors.phone}</p>
@@ -188,7 +191,7 @@ export default function Registration() {
                     max="120"
                     className={`w-full px-3 py-2 bg-bg-secondary border ${
                       errors.age ? 'border-red-500' : 'border-border-light'
-                    } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                    } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                   />
                   {errors.age && (
                     <p className="text-red-500 text-xs mt-0.5">{errors.age}</p>
@@ -206,7 +209,7 @@ export default function Registration() {
                     onChange={handleChange}
                     className={`w-full px-3 py-2 bg-bg-secondary border ${
                       errors.gender ? 'border-red-500' : 'border-border-light'
-                    } rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                    } h-10 rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -234,7 +237,7 @@ export default function Registration() {
                     errors.emergencyContact
                       ? 'border-red-500'
                       : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.emergencyContact && (
                   <p className="text-red-500 text-xs mt-0.5">
@@ -256,7 +259,7 @@ export default function Registration() {
                   placeholder="Create a strong password"
                   className={`w-full px-3 py-2 bg-bg-secondary border ${
                     errors.password ? 'border-red-500' : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-0.5">{errors.password}</p>
@@ -278,7 +281,7 @@ export default function Registration() {
                     errors.confirmPassword
                       ? 'border-red-500'
                       : 'border-border-light'
-                  } rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
+                  } h-10 rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all text-sm`}
                 />
                 {errors.confirmPassword && (
                   <p className="text-red-500 text-xs mt-0.5">
@@ -291,7 +294,7 @@ export default function Registration() {
               <button
                 type="button"
                 onClick={handleContinue}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 uppercase tracking-wide text-sm mt-6"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 uppercase tracking-wide text-sm mt-4"
               >
                 Continue
               </button>
@@ -305,3 +308,4 @@ export default function Registration() {
     </div>
   )
 }
+

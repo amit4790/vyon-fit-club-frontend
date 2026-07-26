@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Trainer Dashboard Page
  * Session management and member oversight
  */
@@ -46,7 +46,7 @@ export default function Trainer() {
   }
 
   const userInfo = AuthService.getUserInfo()
-  const userName = userInfo?.name || 'John Doe'
+  const userName = userInfo?.name || ''
 
   if (isLoading) {
     return (
@@ -67,7 +67,7 @@ export default function Trainer() {
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={loadDashboard}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent"
+              className="px-4 py-2 bg-primary text-text-secondary rounded-lg hover:bg-accent"
             >
               Try Again
             </button>
@@ -85,7 +85,7 @@ export default function Trainer() {
     <div className="min-h-screen bg-gray-50">
       {/* Premium Header with Logo and Branding */}
       <header className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-24">
             {/* Left Side - Logo and Branding */}
             <button
@@ -98,7 +98,7 @@ export default function Trainer() {
                 className="h-16 w-16 object-contain rounded transition-transform duration-300 group-hover:scale-110"
               />
               <div className="hidden sm:flex flex-col">
-                <span className="text-white font-bold text-2xl leading-tight tracking-tighter">
+                <span className="text-text-secondary font-bold text-2xl leading-tight tracking-tighter">
                   VYON
                 </span>
                 <span className="text-gray-400 text-sm font-light">Premium Fitness Club</span>
@@ -109,7 +109,7 @@ export default function Trainer() {
             <div className="flex items-center gap-6">
               {/* Welcome Message */}
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-white text-sm font-medium">
+                <span className="text-text-secondary text-sm font-medium">
                   Welcome, {userName}
                 </span>
                 <span className="text-gray-400 text-xs">Trainer</span>
@@ -118,7 +118,7 @@ export default function Trainer() {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-text-secondary rounded-lg transition-all duration-300 font-medium text-sm"
               >
                 <LogOut size={18} />
                 <span className="hidden sm:inline">Logout</span>
@@ -129,11 +129,11 @@ export default function Trainer() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Welcome Section - Compact */}
         <div className="pt-8 pb-8 mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome back, {userName} 👋
+            Welcome back, {userName}
           </h1>
           <p className="text-lg text-gray-600">
             Here's what's happening at VYON Fit Club today.
@@ -242,3 +242,4 @@ export default function Trainer() {
     </div>
   )
 }
+

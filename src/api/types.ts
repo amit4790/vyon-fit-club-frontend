@@ -3,9 +3,11 @@
  * Type definitions for API requests and responses
  */
 
+import { UserRole } from '../auth/roles'
+
 // Authentication Types
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -13,7 +15,7 @@ export interface UserInfo {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'trainer' | 'member';
+  role: UserRole;
 }
 
 export interface LoginResponse {
@@ -25,16 +27,18 @@ export interface LoginResponse {
 // Dashboard Types
 export interface RecentRegistration {
   name: string;
-  email: string;
+  email: string | null;
   registration_date: string;
 }
 
 export interface AdminDashboardResponse {
   total_members: number;
   active_members: number;
-  monthly_revenue: number;
-  expiring_memberships: number;
-  todays_checkins: number;
+  total_trainers?: number | null;
+  inactive_members?: number | null;
+  monthly_revenue: number | null;
+  expiring_memberships: number | null;
+  todays_checkins: number | null;
   recent_registrations: RecentRegistration[];
 }
 

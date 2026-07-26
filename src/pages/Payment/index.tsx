@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Payment Page (Step 3 of Onboarding)
  * Order summary and payment method selection - Matches Landing Page design
  */
@@ -6,15 +6,22 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
+import { ApiErrorHandler } from '../../api/errors'
+import { adminService } from '../../services/adminService'
 import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
 
 interface MembershipPlan {
-  id: string
+  plan_id: number
+  family: string
   name: string
-  price: number
-  billing: string
+  variant: string | null
+  duration_label: string
   features: string[]
+  base_price: number
+  tax_percent: number
+  tax_amount: number
+  total_price: number
 }
 
 interface CustomerInfo {
@@ -43,6 +50,10 @@ export default function Payment() {
   const [paymentMethod, setPaymentMethod] = useState<string>('card')
   const [paymentSuccessful, setPaymentSuccessful] = useState(false)
   const [transactionId, setTransactionId] = useState<string>('')
+  const [invoiceId, setInvoiceId] = useState<number | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [checkoutNote, setCheckoutNote] = useState<string | null>(null)
 
   // Redirect to register if no data
   useEffect(() => {
@@ -51,19 +62,118 @@ export default function Payment() {
     }
   }, [customerInfo, selectedPlan, navigate])
 
-  const gst = Math.round(selectedPlan?.price! * 0.18)
-  const totalAmount = selectedPlan ? selectedPlan.price + gst : 0
+  const gst = selectedPlan?.tax_amount || 0
+  const totalAmount = selectedPlan?.total_price || 0
 
-  const handlePayNow = () => {
-    // Simulate payment processing
-    const generatedTxnId = `TXN${Date.now()}${Math.floor(Math.random() * 10000)}`
-    setTransactionId(generatedTxnId)
-    setPaymentSuccessful(true)
+  const buildDateOfBirth = (ageText: string): string | undefined => {
+    const age = Number(ageText)
+    if (!Number.isFinite(age) || age <= 0) {
+      return undefined
+    }
 
-    // Redirect to login after 2 seconds
-    setTimeout(() => {
-      navigate('/login')
-    }, 2000)
+    const today = new Date()
+    const dob = new Date(today.getFullYear() - age, today.getMonth(), today.getDate())
+    return dob.toISOString().slice(0, 10)
+  }
+
+  const handlePayNow = async () => {
+    if (!customerInfo || !selectedPlan) {
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      setPaymentError(null)
+      let memberId: number
+
+      try {
+        const memberResponse = await adminService.createMember({
+          full_name: customerInfo.fullName,
+          mobile_number: customerInfo.phone,
+          joining_date: new Date().toISOString().slice(0, 10),
+          status: 'active',
+          email: customerInfo.email,
+          gender:
+            customerInfo.gender === 'male' ||
+            customerInfo.gender === 'female' ||
+            customerInfo.gender === 'other'
+              ? customerInfo.gender
+              : undefined,
+          date_of_birth: buildDateOfBirth(customerInfo.age),
+          emergency_contact: customerInfo.emergencyContact,
+          emergency_phone: customerInfo.emergencyContact,
+          notes: `Registered via public flow using ${paymentMethod} payment option (demo).`,
+        })
+        memberId = memberResponse.data.id
+      } catch (createErr: any) {
+        const createApiError = ApiErrorHandler.parse(createErr)
+        if (createApiError.status !== 409) {
+          throw createErr
+        }
+
+        const existingMembers = await adminService.getMembers({
+          page: 1,
+          pageSize: 20,
+          search: customerInfo.phone,
+        })
+        const existingMember = existingMembers.data.find(
+          (member) => member.mobile_number === customerInfo.phone
+        )
+
+        if (!existingMember) {
+          throw createErr
+        }
+
+        memberId = existingMember.id
+        setCheckoutNote('Existing member profile reused for this checkout.')
+      }
+
+      try {
+        await adminService.assignSubscription(memberId, {
+          plan_id: selectedPlan.plan_id,
+          start_date: new Date().toISOString().slice(0, 10),
+        })
+      } catch (assignErr: any) {
+        const assignApiError = ApiErrorHandler.parse(assignErr)
+        if (assignApiError.status !== 409) {
+          throw assignErr
+        }
+        setCheckoutNote('An active subscription already existed, so payment was applied to the latest invoice.')
+      }
+
+      const subscriptionsResponse = await adminService.getMemberSubscriptions(memberId)
+      const latestSubscription = subscriptionsResponse.data[0]
+
+      const invoiceResponse = await adminService.getInvoices({
+        page: 1,
+        pageSize: 20,
+        memberId,
+      })
+
+      const targetInvoice = invoiceResponse.data.find(
+        (invoice) =>
+          invoice.status !== 'paid' &&
+          (!latestSubscription || invoice.subscription_id === latestSubscription.id)
+      ) || invoiceResponse.data[0]
+
+      if (targetInvoice) {
+        await adminService.updateInvoiceStatus(targetInvoice.id, 'paid')
+        setInvoiceId(targetInvoice.id)
+      }
+
+      const generatedTxnId = `TXN${Date.now()}${Math.floor(Math.random() * 10000)}`
+      setTransactionId(generatedTxnId)
+      setPaymentSuccessful(true)
+
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      setPaymentError(apiError.message)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (!customerInfo || !selectedPlan) {
@@ -79,7 +189,7 @@ export default function Payment() {
             {/* Success Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center animate-pulse">
-                <Check size={40} className="text-white" />
+                <Check size={40} className="text-text-secondary" />
               </div>
             </div>
 
@@ -101,17 +211,36 @@ export default function Payment() {
                   </p>
                 </div>
 
+                {invoiceId && (
+                  <div className="border-b border-border-light pb-3">
+                    <p className="text-text-secondary text-xs mb-1">Invoice ID</p>
+                    <p className="text-primary font-mono text-sm font-semibold break-all">
+                      #{invoiceId}
+                    </p>
+                  </div>
+                )}
+
+                {checkoutNote && (
+                  <div className="border-b border-border-light pb-3">
+                    <p className="text-text-secondary text-xs mb-1">Checkout Note</p>
+                    <p className="text-text-secondary text-xs">{checkoutNote}</p>
+                  </div>
+                )}
+
                 <div className="border-b border-border-light pb-3">
                   <p className="text-text-secondary text-xs mb-1">Membership</p>
                   <p className="text-text-primary font-semibold text-base">
                     {selectedPlan.name}
+                  </p>
+                  <p className="text-text-secondary text-xs mt-1">
+                    {selectedPlan.variant || selectedPlan.duration_label}
                   </p>
                 </div>
 
                 <div className="pb-3">
                   <p className="text-text-secondary text-xs mb-1">Amount Paid</p>
                   <p className="text-primary font-semibold text-lg">
-                    ₹{totalAmount.toLocaleString('en-IN')}
+                    INR {totalAmount.toLocaleString('en-IN')}
                   </p>
                 </div>
               </div>
@@ -131,8 +260,8 @@ export default function Payment() {
     <div className="w-full bg-bg-primary">
       <LandingNavbar />
 
-      <main className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="py-12">
+        <div className="max-w-6xl mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/memberships', { state: { customerInfo } })}
@@ -197,10 +326,10 @@ export default function Payment() {
 
                 <div className="space-y-3">
                   {[
-                    { id: 'card', label: '💳 Credit/Debit Card' },
-                    { id: 'upi', label: '📱 UPI' },
-                    { id: 'netbanking', label: '🏦 Net Banking' },
-                    { id: 'cash', label: '💵 Cash at Gym' },
+                    { id: 'card', label: 'Credit or Debit Card' },
+                    { id: 'upi', label: 'UPI' },
+                    { id: 'netbanking', label: 'Net Banking' },
+                    { id: 'cash', label: 'Cash at Gym' },
                   ].map((method) => (
                     <label key={method.id} className="flex items-center gap-3 p-3 border border-border-light rounded-lg hover:border-primary hover:bg-primary/5 cursor-pointer transition-all">
                       <input
@@ -233,6 +362,9 @@ export default function Payment() {
                   <h4 className="text-xl font-bold text-primary mb-1">
                     {selectedPlan.name}
                   </h4>
+                  <p className="text-text-secondary text-xs mb-1">
+                    {selectedPlan.variant || selectedPlan.duration_label}
+                  </p>
                   <p className="text-text-secondary text-xs">
                     {selectedPlan.features.length} features included
                   </p>
@@ -243,13 +375,13 @@ export default function Payment() {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-text-secondary">Price</span>
                     <span className="text-text-primary font-semibold">
-                      ₹{selectedPlan.price.toLocaleString('en-IN')}
+                      INR {selectedPlan.base_price.toLocaleString('en-IN')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-secondary">GST (18%)</span>
+                    <span className="text-text-secondary">GST ({selectedPlan.tax_percent}%)</span>
                     <span className="text-text-primary font-semibold">
-                      ₹{gst.toLocaleString('en-IN')}
+                      INR {gst.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
@@ -261,17 +393,22 @@ export default function Payment() {
                       Total Amount
                     </span>
                     <span className="text-2xl font-bold text-primary">
-                      ₹{totalAmount.toLocaleString('en-IN')}
+                      INR {totalAmount.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
 
+                {paymentError && (
+                  <p className="text-red-600 text-xs mb-3">{paymentError}</p>
+                )}
+
                 {/* Pay Now Button */}
                 <button
                   onClick={handlePayNow}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 uppercase tracking-wide text-sm"
+                  disabled={isProcessing}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 uppercase tracking-wide text-sm"
                 >
-                  Pay Now
+                  {isProcessing ? 'Processing...' : 'Pay Now'}
                 </button>
 
                 {/* Info Text */}
@@ -288,3 +425,4 @@ export default function Payment() {
     </div>
   )
 }
+

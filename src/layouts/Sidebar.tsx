@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Sidebar Component
  * Collapsible left sidebar for dashboard layouts
  */
 
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, X, Home, Users, BarChart3, Settings } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 export interface SidebarItem {
   icon: React.ReactNode
@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title={isCollapsed ? item.label : ''}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 item.isActive
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-text-secondary'
                   : 'text-text-secondary hover:bg-bg-card hover:text-text-primary'
               }`}
             >
@@ -78,3 +78,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   )
 }
+

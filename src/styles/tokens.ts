@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VYON FIT CLUB - Design Tokens
  * Complete design system configuration
  */
@@ -21,7 +21,7 @@ export const colors = {
   borderLight: '#2A2A2E',
 
   // Text
-  textPrimary: '#F5F5F5',
+  textPrimary: '#C3C3C3',
   textSecondary: '#B8B8B8',
 
   // Neutral
@@ -138,10 +138,10 @@ export const breakpoints = {
 // ============================================================
 
 export const buttonVariants = {
-  primary: 'bg-primary text-white hover:bg-primaryDark',
+  primary: 'bg-primary text-text-secondary hover:bg-primaryDark',
   secondary: 'bg-bgCard text-textPrimary border border-borderLight hover:bg-bgSecondary',
-  outline: 'bg-transparent text-primary border border-primary hover:bg-primary hover:text-white',
-  danger: 'bg-danger text-white hover:bg-red-700',
+  outline: 'bg-transparent text-primary border border-primary hover:bg-primary hover:text-text-secondary',
+  danger: 'bg-danger text-text-secondary hover:bg-red-700',
 }
 
 export const buttonSizes = {
@@ -194,3 +194,4 @@ export const designSystem = {
 }
 
 export default designSystem
+

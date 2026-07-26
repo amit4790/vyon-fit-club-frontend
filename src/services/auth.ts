@@ -6,6 +6,8 @@
 import { httpClient } from '../api/http-client';
 import { API_ENDPOINTS } from '../api/config';
 import { LoginRequest, LoginResponse, UserInfo } from '../api/types';
+import { canAccessAdmin } from '../auth/authorization';
+import { USER_ROLES, UserRole } from '../auth/roles';
 
 export class AuthService {
   /**
@@ -69,7 +71,7 @@ export class AuthService {
       id: localStorage.getItem('userId') || '',
       name: localStorage.getItem('userName') || '',
       email: localStorage.getItem('userEmail') || '',
-      role: (localStorage.getItem('userRole') as any) || 'member',
+      role: (localStorage.getItem('userRole') || USER_ROLES.MEMBER) as UserRole,
     };
   }
 
@@ -84,6 +86,14 @@ export class AuthService {
    * Check if user has specific role
    */
   static hasRole(role: string): boolean {
-    return localStorage.getItem('userRole') === role;
+    const currentRole = this.getUserRole();
+    if (!currentRole) {
+      return false;
+    }
+    return currentRole === role;
+  }
+
+  static canAccessAdmin(): boolean {
+    return canAccessAdmin(this.getUserRole());
   }
 }

@@ -49,13 +49,13 @@ export const TableBody: React.FC<TableBodyProps> = ({ children }) => {
   return <tbody>{children}</tbody>
 }
 
-interface TableRowProps {
+interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   children: React.ReactNode
   className?: string
 }
 
-export const TableRow: React.FC<TableRowProps> = ({ children, className = '' }) => {
-  return <tr className={`table-body-row ${className}`}>{children}</tr>
+export const TableRow: React.FC<TableRowProps> = ({ children, className = '', ...props }) => {
+  return <tr className={`table-body-row ${className}`} {...props}>{children}</tr>
 }
 
 interface TableCellProps {

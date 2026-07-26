@@ -10,6 +10,50 @@ export interface ApiError {
 }
 
 export class ApiErrorHandler {
+  private static normalizeMessage(value: unknown, fallback: string): string {
+    if (typeof value === 'string' && value.trim()) {
+      return value
+    }
+
+    if (Array.isArray(value)) {
+      const messages = value
+        .map((item) => {
+          if (typeof item === 'string') {
+            return item
+          }
+
+          if (item && typeof item === 'object') {
+            const msg = (item as { msg?: unknown }).msg
+            if (typeof msg === 'string' && msg.trim()) {
+              return msg
+            }
+          }
+
+          return null
+        })
+        .filter((item): item is string => Boolean(item))
+
+      if (messages.length > 0) {
+        return messages.join(', ')
+      }
+    }
+
+    if (value && typeof value === 'object') {
+      const msg = (value as { msg?: unknown }).msg
+      if (typeof msg === 'string' && msg.trim()) {
+        return msg
+      }
+
+      try {
+        return JSON.stringify(value)
+      } catch {
+        return fallback
+      }
+    }
+
+    return fallback
+  }
+
   /**
    * Parse API error response
    */
@@ -18,11 +62,12 @@ export class ApiErrorHandler {
       // Server responded with error status
       const status = error.response.status;
       const data = error.response.data;
+      const fallback = this.getStatusMessage(status)
 
       return {
         status,
-        message: data?.detail || data?.message || this.getStatusMessage(status),
-        detail: data?.detail,
+        message: this.normalizeMessage(data?.detail ?? data?.message, fallback),
+        detail: this.normalizeMessage(data?.detail, ''),
       };
     } else if (error.request) {
       // Request made but no response

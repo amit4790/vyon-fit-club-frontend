@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Registration Page
  * User registration with selected membership plan
  */
@@ -7,13 +7,19 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
+import { formatPlanDurationSuffix } from '../../utils/format'
 
 interface MembershipPlan {
-  id: string
+  plan_id: number
+  family: string
   name: string
-  price: number
-  billing: string
+  variant: string | null
+  duration_label: string
   features: string[]
+  base_price: number
+  tax_percent: number
+  tax_amount: number
+  total_price: number
   isPopular?: boolean
 }
 
@@ -33,8 +39,8 @@ export default function Register() {
       <LandingNavbar />
 
       {/* Main Content */}
-      <main className="pt-32 pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="pt-24 pb-12">
+        <div className="max-w-6xl mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/memberships')}
@@ -45,7 +51,7 @@ export default function Register() {
           </button>
 
           {/* Page Header */}
-          <div className="mb-12">
+          <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">
               Create Your Account
             </h1>
@@ -54,11 +60,11 @@ export default function Register() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Registration Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:max-w-2xl">
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-border-light">
-                <form className="space-y-6">
+                <form className="space-y-5">
                   {/* Name Field */}
                   <div>
                     <label className="block text-text-primary font-medium mb-2">
@@ -67,7 +73,7 @@ export default function Register() {
                     <input
                       type="text"
                       placeholder="Enter your full name"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -79,7 +85,7 @@ export default function Register() {
                     <input
                       type="email"
                       placeholder="your.email@example.com"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -91,7 +97,7 @@ export default function Register() {
                     <input
                       type="tel"
                       placeholder="+91 98765 43210"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -103,7 +109,7 @@ export default function Register() {
                     <input
                       type="password"
                       placeholder="Create a strong password"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -115,7 +121,7 @@ export default function Register() {
                     <input
                       type="password"
                       placeholder="Confirm your password"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -134,7 +140,7 @@ export default function Register() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
+                    className="w-full h-11 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
                   >
                     Create Account
                   </button>
@@ -144,7 +150,7 @@ export default function Register() {
 
             {/* Selected Plan Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border-2 border-primary h-fit sticky top-32">
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border-2 border-primary h-fit sticky top-24">
                 <h3 className="text-xl font-bold text-text-primary mb-6">
                   Order Summary
                 </h3>
@@ -157,6 +163,9 @@ export default function Register() {
                       <h4 className="text-2xl font-bold text-primary mb-2">
                         {selectedPlan.name}
                       </h4>
+                      <p className="text-text-secondary text-sm mb-2">
+                        {selectedPlan.variant || selectedPlan.duration_label}
+                      </p>
                       <p className="text-text-secondary text-sm">
                         {selectedPlan.features.length} features included
                       </p>
@@ -166,10 +175,11 @@ export default function Register() {
                     <div className="mb-6 pb-6 border-b border-border-light">
                       <div className="flex items-baseline gap-2">
                         <span className="text-4xl font-bold text-primary">
-                          ₹{selectedPlan.price}
+                          INR {selectedPlan.base_price.toLocaleString('en-IN')}
                         </span>
-                        <span className="text-text-secondary">{selectedPlan.billing}</span>
+                        <span className="text-text-secondary">{formatPlanDurationSuffix(selectedPlan.duration_label)}</span>
                       </div>
+                      <p className="text-text-secondary text-xs mt-2">GST {selectedPlan.tax_percent}% applies at checkout</p>
                     </div>
 
                     {/* Key Features */}
@@ -180,7 +190,7 @@ export default function Register() {
                       <ul className="space-y-2">
                         {selectedPlan.features.slice(0, 3).map((feature, index) => (
                           <li key={index} className="text-text-secondary text-sm flex items-start gap-2">
-                            <span className="text-primary mt-1">✓</span>
+                            <span className="text-primary mt-1">+</span>
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -202,7 +212,7 @@ export default function Register() {
                     </p>
                     <button
                       onClick={() => navigate('/memberships')}
-                      className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-accent transition-all"
+                      className="w-full py-2 px-4 bg-primary text-text-secondary rounded-lg hover:bg-accent transition-all"
                     >
                       Select a Plan
                     </button>
@@ -219,3 +229,4 @@ export default function Register() {
     </div>
   )
 }
+

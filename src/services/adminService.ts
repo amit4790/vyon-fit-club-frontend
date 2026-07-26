@@ -2,15 +2,142 @@
  * Admin API service
  */
 
-import { get } from '../api/api'
-import { ApiResponse } from '../types'
+import { httpClient } from '../api/http-client'
+import {
+  CapturePaymentApiResponse,
+  CapturePaymentPayload,
+  ExpiringSubscriptionsApiResponse,
+  InvoiceListApiResponse,
+  InvoiceOperationApiResponse,
+  InvoiceStatus,
+  MemberSubscriptionsApiResponse,
+  MemberDeleteApiResponse,
+  MemberListApiResponse,
+  MemberOperationApiResponse,
+  MemberPayload,
+  PlanCatalogApiResponse,
+  PlanOptionOperationApiResponse,
+  SubscriptionOperationApiResponse,
+  TrainerDeleteApiResponse,
+  TrainerListApiResponse,
+  TrainerOperationApiResponse,
+  TrainerPayload,
+  AdminUserPayload,
+  AdminUserOperationApiResponse,
+  ReportsSummaryApiResponse,
+  AdminProfileApiResponse,
+  TrainerDetailApiResponse,
+} from '../types'
 
 export const adminService = {
-  getDashboard: () => get('/api/admin/dashboard'),
+  getDashboard: () => httpClient.get('/dashboard/admin'),
 
-  getMembers: () => get('/api/admin/members'),
+  getMembers: (params: { page: number; pageSize: number; search?: string }) => {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      page_size: params.pageSize.toString(),
+    })
 
-  getTrainers: () => get('/api/admin/trainers'),
+    if (params.search?.trim()) {
+      query.set('search', params.search.trim())
+    }
 
-  getClasses: () => get('/api/admin/classes'),
+    return httpClient.get<MemberListApiResponse>(`/admin/members?${query.toString()}`)
+  },
+
+  createMember: (payload: MemberPayload) =>
+    httpClient.post<MemberOperationApiResponse>('/admin/members', payload),
+
+  getMemberById: (memberId: number) =>
+    httpClient.get<MemberOperationApiResponse>(`/admin/members/${memberId}`),
+
+  updateMember: (memberId: number, payload: Partial<MemberPayload>) =>
+    httpClient.put<MemberOperationApiResponse>(`/admin/members/${memberId}`, payload),
+
+  deleteMember: (memberId: number) =>
+    httpClient.delete<MemberDeleteApiResponse>(`/admin/members/${memberId}`),
+
+  getPlanCatalog: () => httpClient.get<PlanCatalogApiResponse>('/admin/plans'),
+
+  updatePlanPrice: (planId: number, payload: { base_price: number; tax_percent?: number }) =>
+    httpClient.patch<PlanOptionOperationApiResponse>(`/admin/plans/${planId}`, payload),
+
+  assignSubscription: (memberId: number, payload: { plan_id: number; start_date: string }) =>
+    httpClient.post<SubscriptionOperationApiResponse>(`/admin/members/${memberId}/subscriptions`, payload),
+
+  getMemberSubscriptions: (memberId: number) =>
+    httpClient.get<MemberSubscriptionsApiResponse>(`/admin/members/${memberId}/subscriptions`),
+
+  getSubscriptionById: (subscriptionId: number) =>
+    httpClient.get<SubscriptionOperationApiResponse>(`/admin/subscriptions/${subscriptionId}`),
+
+  captureSubscriptionPayment: (subscriptionId: number, payload: CapturePaymentPayload) =>
+    httpClient.post<CapturePaymentApiResponse>(`/admin/subscriptions/${subscriptionId}/payment`, payload),
+
+  getExpiringSubscriptions: (params: { days: number; page: number; pageSize: number }) => {
+    const query = new URLSearchParams({
+      days: params.days.toString(),
+      page: params.page.toString(),
+      page_size: params.pageSize.toString(),
+    })
+
+    return httpClient.get<ExpiringSubscriptionsApiResponse>(`/admin/subscriptions/expiring?${query.toString()}`)
+  },
+
+  getInvoices: (params: {
+    page: number
+    pageSize: number
+    status?: InvoiceStatus
+    memberId?: number
+  }) => {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      page_size: params.pageSize.toString(),
+    })
+
+    if (params.status) {
+      query.set('status', params.status)
+    }
+
+    if (params.memberId) {
+      query.set('member_id', String(params.memberId))
+    }
+
+    return httpClient.get<InvoiceListApiResponse>(`/admin/invoices?${query.toString()}`)
+  },
+
+  getInvoiceById: (invoiceId: number) =>
+    httpClient.get<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}`),
+
+  downloadInvoicePdf: (invoiceId: number) =>
+    httpClient.get<Blob>(`/admin/invoices/${invoiceId}/download`, { responseType: 'blob' }),
+
+  updateInvoiceStatus: (invoiceId: number, status: InvoiceStatus) =>
+    httpClient.patch<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}/status`, { status }),
+
+  resendInvoice: (invoiceId: number) =>
+    httpClient.post<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}/resend`),
+
+  getTrainers: () => httpClient.get<TrainerListApiResponse>('/admin/trainers'),
+
+  getTrainerById: (trainerId: number) =>
+    httpClient.get<TrainerDetailApiResponse>(`/admin/trainers/${trainerId}`),
+
+  createTrainer: (payload: TrainerPayload) =>
+    httpClient.post<TrainerOperationApiResponse>('/admin/trainers', payload),
+
+  createAdminUser: (payload: AdminUserPayload) =>
+    httpClient.post<AdminUserOperationApiResponse>('/admin/users/admins', payload),
+
+  updateTrainer: (trainerId: number, payload: Partial<TrainerPayload>) =>
+    httpClient.put<TrainerOperationApiResponse>(`/admin/trainers/${trainerId}`, payload),
+
+  deleteTrainer: (trainerId: number) =>
+    httpClient.delete<TrainerDeleteApiResponse>(`/admin/trainers/${trainerId}`),
+
+  getClasses: () => httpClient.get('/admin/classes'),
+
+  getReportsSummary: () => httpClient.get<ReportsSummaryApiResponse>('/admin/reports/summary'),
+
+  getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
 }

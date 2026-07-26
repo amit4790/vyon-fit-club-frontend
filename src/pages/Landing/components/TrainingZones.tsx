@@ -1,10 +1,9 @@
-/**
+﻿/**
  * Training Zones Gallery
  * Premium gallery of training areas
  */
 
 import React from 'react'
-import { Zap } from 'lucide-react'
 
 interface ZoneCardProps {
   title: string
@@ -14,7 +13,7 @@ interface ZoneCardProps {
 
 const ZoneCard: React.FC<ZoneCardProps> = ({ title, description, image }) => {
   return (
-    <div className="group relative h-80 rounded-lg overflow-hidden cursor-pointer">
+    <div className="group relative h-80 lg:h-96 rounded-lg overflow-hidden cursor-pointer">
       {/* Image */}
       <img
         src={image}
@@ -26,9 +25,9 @@ const ZoneCard: React.FC<ZoneCardProps> = ({ title, description, image }) => {
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent group-hover:via-black/50 transition-all duration-300" />
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
+      <div className="absolute inset-0 flex flex-col justify-end p-6 text-text-secondary">
         <h3 className="text-xl font-bold mb-2">{title}</h3>
-        <p className="text-sm text-gray-300 group-hover:text-white transition-colors">
+        <p className="text-sm text-gray-300 group-hover:text-text-secondary transition-colors">
           {description}
         </p>
       </div>
@@ -56,12 +55,12 @@ export const TrainingZones: React.FC = () => {
   ]
 
   return (
-    <section id="gallery" className="py-20 bg-bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="gallery" className="landing-section bg-bg-secondary">
+      <div className="landing-container">
         {/* Title */}
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">TRAINING ZONES</h2>
-          <p className="body text-text-secondary max-w-2xl mx-auto">
+        <div className="landing-header">
+          <h2 className="section-title mb-3 tracking-wider">TRAINING ZONES</h2>
+          <p className="landing-subtitle">
             Explore our premium training facilities
           </p>
         </div>
@@ -76,3 +75,4 @@ export const TrainingZones: React.FC = () => {
     </section>
   )
 }
+
