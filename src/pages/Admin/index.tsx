@@ -5,6 +5,7 @@ import { ApiErrorHandler } from '../../api/errors'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import AdminShell from '../../layouts/AdminShell'
+import { formatNumber } from '../../utils/format'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -87,30 +88,31 @@ export default function AdminDashboard() {
         <Card className="p-5">
           <div className="flex flex-col">
             <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Total Members</span>
-            <span className="text-[2rem] font-semibold text-primary mt-2 leading-none">{dashboard.total_members}</span>
+            <span className="text-[2rem] font-semibold text-primary mt-2 leading-none">{formatNumber(dashboard.total_members)}</span>
           </div>
         </Card>
 
         <Card className="p-5">
           <div className="flex flex-col">
             <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Active Members</span>
-            <span className="text-[2rem] font-semibold text-success mt-2 leading-none">{dashboard.active_members}</span>
+            <span className="text-[2rem] font-semibold text-success mt-2 leading-none">{formatNumber(dashboard.active_members)}</span>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex flex-col">
+            <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Total Trainers</span>
+            <span className="text-[2rem] font-semibold text-primary mt-2 leading-none">{formatNumber(dashboard.total_trainers ?? 0)}</span>
           </div>
         </Card>
 
         <Card className="p-5">
           <div className="flex flex-col">
             <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Inactive Members</span>
-            <span className="text-[2rem] font-semibold text-accent mt-2 leading-none">{dashboard.inactive_members ?? 'N/A'}</span>
+            <span className="text-[2rem] font-semibold text-accent mt-2 leading-none">{dashboard.inactive_members == null ? 'N/A' : formatNumber(dashboard.inactive_members)}</span>
           </div>
         </Card>
 
-        <Card className="p-5">
-          <div className="flex flex-col">
-            <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Today's Check-ins</span>
-            <span className="text-[2rem] font-semibold text-accent mt-2 leading-none">{dashboard.todays_checkins ?? 'N/A'}</span>
-          </div>
-        </Card>
       </div>
 
       <Card className="p-5">

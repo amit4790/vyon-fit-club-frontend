@@ -5,12 +5,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Check, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { ApiErrorHandler } from '../../api/errors'
 import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
 import { adminService } from '../../services/adminService'
 import { PlanFamilyRecord } from '../../types'
+import { formatCurrency, formatPlanDurationSuffix } from '../../utils/format'
 
 interface MembershipSelection {
   plan_id: number
@@ -68,9 +69,49 @@ export default function Memberships() {
     loadPlans()
   }, [])
 
+  const getFamilyOrder = (name: string): number => {
+    const normalized = name.toUpperCase()
+    if (normalized.includes('BASIC')) return 1
+    if (normalized.includes('ADVANCE')) return 2
+    if (normalized.includes('PRO')) return 3
+    return 99
+  }
+
+  const rewriteFeatures = (familyName: string, features: string[]): string[] => {
+    const normalized = familyName.toUpperCase()
+    if (normalized.includes('BASIC')) {
+      return [
+        'Gym access during standard hours',
+        'Cardio and strength zones',
+        '1 onboarding session',
+        'Locker support',
+      ]
+    }
+    if (normalized.includes('ADVANCE')) {
+      return [
+        'All Basic plan features +',
+        'Group class access',
+        'Monthly body composition tracking',
+        'Nutrition guidance',
+      ]
+    }
+    if (normalized.includes('PRO')) {
+      return [
+        'All Advance plan features +',
+        '1:1 personal training sessions',
+        'Customized diet plan',
+        'Green Tea / Black Coffee',
+        'Passive Stretching',
+        'Foot Reflexology',
+      ]
+    }
+    return features
+  }
+
   const allOptions = useMemo(() => {
     const mapped: MembershipSelection[] = []
-    plans.forEach((family, familyIndex) => {
+    const orderedFamilies = [...plans].sort((a, b) => getFamilyOrder(a.family) - getFamilyOrder(b.family))
+    orderedFamilies.forEach((family, familyIndex) => {
       family.options.forEach((option, optionIndex) => {
         mapped.push({
           plan_id: option.id,
@@ -78,7 +119,7 @@ export default function Memberships() {
           name: family.family,
           variant: option.variant,
           duration_label: option.duration_label,
-          features: family.includes,
+          features: rewriteFeatures(family.family, family.includes),
           base_price: option.base_price,
           tax_percent: option.tax_percent,
           tax_amount: option.tax_amount,
@@ -171,10 +212,10 @@ export default function Memberships() {
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-bold text-primary">
-                        INR {plan.base_price.toLocaleString('en-IN')}
+                        {formatCurrency(plan.base_price)}
                       </span>
                       <span className="text-text-secondary text-sm">
-                        /{plan.duration_label.toLowerCase()}
+                        {formatPlanDurationSuffix(plan.duration_label)}
                       </span>
                     </div>
                     <p className="text-xs text-text-secondary mt-2">
@@ -186,9 +227,8 @@ export default function Memberships() {
                   <ul className="space-y-3 mb-8 flex-grow">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <Check size={16} className="text-success flex-shrink-0 mt-1" />
                         <span className="text-text-secondary text-sm">
-                          {feature}
+                          • {feature}
                         </span>
                       </li>
                     ))}

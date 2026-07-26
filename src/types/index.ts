@@ -105,6 +105,8 @@ export interface TrainerRecord {
   id: number
   full_name: string
   email: string
+  phone_number?: string | null
+  specialization?: string | null
   role: string
   is_active: boolean
 }
@@ -112,6 +114,9 @@ export interface TrainerRecord {
 export interface TrainerPayload {
   full_name: string
   email: string
+  phone_number: string
+  temporary_password?: string
+  specialization?: string | null
   is_active?: boolean
 }
 
@@ -149,6 +154,65 @@ export interface AdminUserPayload {
 export interface AdminUserOperationApiResponse {
   message: string
   data: AdminUserRecord
+}
+
+export interface ReportsSummaryRecord {
+  total_members: number
+  active_members: number
+  total_invoices: number
+  paid_invoices: number
+  pending_invoices: number
+  collected_revenue: number
+  pending_revenue: number
+  average_invoice_value: number
+  expiring_memberships_next_30_days: number
+}
+
+export interface ReportsSummaryApiResponse {
+  message: string
+  data: ReportsSummaryRecord
+}
+
+export interface AdminProfileRecord {
+  id: number
+  full_name: string
+  email: string
+  phone_number: string | null
+  role: string
+  is_active: boolean
+  joined_date: string
+}
+
+export interface TrainerAssignedMember {
+  id: number
+  full_name: string
+  mobile_number: string
+}
+
+export interface TrainerDetailRecord {
+  id: number
+  full_name: string
+  email: string
+  phone_number: string | null
+  specialization: string | null
+  role: string
+  is_active: boolean
+  assigned_members: TrainerAssignedMember[]
+}
+
+export interface TrainerDetailApiResponse {
+  message: string
+  data: TrainerDetailRecord
+}
+
+export interface AdminProfileApiResponse {
+  id: number
+  full_name: string
+  email: string
+  phone_number: string | null
+  role: string
+  is_active: boolean
+  joined_date: string
 }
 
 export interface SubscriptionRecord {

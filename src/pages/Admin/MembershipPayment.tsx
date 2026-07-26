@@ -10,6 +10,7 @@ import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { InvoiceRecord, PaymentMode, SubscriptionRecord } from '../../types'
+import { formatCurrency } from '../../utils/format'
 
 interface PaymentRouteState {
   subscription?: SubscriptionRecord
@@ -24,10 +25,7 @@ const PAYMENT_MODE_OPTIONS: Array<{ value: PaymentMode; label: string }> = [
 ]
 
 function money(value: number): string {
-  return `INR ${value.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
+  return formatCurrency(value)
 }
 
 function formatDate(value: string): string {

@@ -24,6 +24,9 @@ import {
   TrainerPayload,
   AdminUserPayload,
   AdminUserOperationApiResponse,
+  ReportsSummaryApiResponse,
+  AdminProfileApiResponse,
+  TrainerDetailApiResponse,
 } from '../types'
 
 export const adminService = {
@@ -44,6 +47,9 @@ export const adminService = {
 
   createMember: (payload: MemberPayload) =>
     httpClient.post<MemberOperationApiResponse>('/admin/members', payload),
+
+  getMemberById: (memberId: number) =>
+    httpClient.get<MemberOperationApiResponse>(`/admin/members/${memberId}`),
 
   updateMember: (memberId: number, payload: Partial<MemberPayload>) =>
     httpClient.put<MemberOperationApiResponse>(`/admin/members/${memberId}`, payload),
@@ -114,6 +120,9 @@ export const adminService = {
 
   getTrainers: () => httpClient.get<TrainerListApiResponse>('/admin/trainers'),
 
+  getTrainerById: (trainerId: number) =>
+    httpClient.get<TrainerDetailApiResponse>(`/admin/trainers/${trainerId}`),
+
   createTrainer: (payload: TrainerPayload) =>
     httpClient.post<TrainerOperationApiResponse>('/admin/trainers', payload),
 
@@ -127,4 +136,8 @@ export const adminService = {
     httpClient.delete<TrainerDeleteApiResponse>(`/admin/trainers/${trainerId}`),
 
   getClasses: () => httpClient.get('/admin/classes'),
+
+  getReportsSummary: () => httpClient.get<ReportsSummaryApiResponse>('/admin/reports/summary'),
+
+  getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
 }

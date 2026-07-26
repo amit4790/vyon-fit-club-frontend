@@ -6,10 +6,10 @@
 import React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
 import { ApiErrorHandler } from '../../../api/errors'
 import { adminService } from '../../../services/adminService'
 import { PlanFamilyRecord } from '../../../types'
+import { formatCurrency, formatPlanDurationSuffix } from '../../../utils/format'
 
 interface PlanProps {
   name: string
@@ -64,8 +64,7 @@ const PlanCard: React.FC<PlanProps> = ({
         <ul className="space-y-3 mb-8">
           {features.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              <Check size={18} className="text-success flex-shrink-0 mt-0.5" />
-              <span className="body text-text-secondary text-sm">{feature}</span>
+              <span className="body text-text-secondary text-sm">• {feature}</span>
             </li>
           ))}
         </ul>
@@ -101,16 +100,57 @@ export const MembershipPlans: React.FC = () => {
     loadPlans()
   }, [])
 
+  const getFamilyOrder = (name: string): number => {
+    const normalized = name.toUpperCase()
+    if (normalized.includes('BASIC')) return 1
+    if (normalized.includes('ADVANCE')) return 2
+    if (normalized.includes('PRO')) return 3
+    return 99
+  }
+
+  const rewriteFeatures = (familyName: string, features: string[]): string[] => {
+    const normalized = familyName.toUpperCase()
+    if (normalized.includes('BASIC')) {
+      return [
+        'Gym access during standard hours',
+        'Cardio and strength zones',
+        '1 onboarding session',
+        'Locker support',
+      ]
+    }
+    if (normalized.includes('ADVANCE')) {
+      return [
+        'All Basic plan features +',
+        'Group class access',
+        'Monthly body composition tracking',
+        'Nutrition guidance',
+      ]
+    }
+    if (normalized.includes('PRO')) {
+      return [
+        'All Advance plan features +',
+        '1:1 personal training sessions',
+        'Customized diet plan',
+        'Green Tea / Black Coffee',
+        'Passive Stretching',
+        'Foot Reflexology',
+      ]
+    }
+    return features
+  }
+
   const plans = useMemo(() => {
-    return families.map((family, index) => {
+    return [...families]
+      .sort((a, b) => getFamilyOrder(a.family) - getFamilyOrder(b.family))
+      .map((family, index) => {
       const sortedOptions = [...family.options].sort((a, b) => a.base_price - b.base_price)
       const cheapest = sortedOptions[0]
 
       return {
         name: family.family,
-        price: cheapest ? `INR ${Math.round(cheapest.base_price).toLocaleString('en-IN')}` : 'INR 0',
-        billing: cheapest ? ` per ${cheapest.duration_label.toLowerCase()}` : '',
-        features: family.includes,
+        price: cheapest ? formatCurrency(cheapest.base_price) : formatCurrency(0),
+        billing: cheapest ? formatPlanDurationSuffix(cheapest.duration_label) : '',
+        features: rewriteFeatures(family.family, family.includes),
         highlighted: index === 1,
       }
     })

@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { LandingNavbar } from '../Landing/components/Navbar'
 import { LandingFooter } from '../Landing/components/Footer'
+import { formatPlanDurationSuffix } from '../../utils/format'
 
 interface MembershipPlan {
   plan_id: number
@@ -176,7 +177,7 @@ export default function Register() {
                         <span className="text-4xl font-bold text-primary">
                           INR {selectedPlan.base_price.toLocaleString('en-IN')}
                         </span>
-                        <span className="text-text-secondary">/{selectedPlan.duration_label.toLowerCase()}</span>
+                        <span className="text-text-secondary">{formatPlanDurationSuffix(selectedPlan.duration_label)}</span>
                       </div>
                       <p className="text-text-secondary text-xs mt-2">GST {selectedPlan.tax_percent}% applies at checkout</p>
                     </div>

@@ -544,7 +544,7 @@ export default function AdminMembers() {
 
           <div className="flex items-center gap-2">
             {isSuperAdmin && (
-              <Button size="sm" variant="secondary" onClick={() => navigate('/admin/settings?tab=admins')}>
+              <Button size="sm" variant="secondary" onClick={() => navigate('/admin/admins')}>
                 Add Admin
               </Button>
             )}
@@ -628,7 +628,11 @@ export default function AdminMembers() {
                     }
 
                     return (
-                  <TableRow key={member.id}>
+                  <TableRow
+                    key={member.id}
+                    onClick={() => navigate(`/admin/members/${member.id}`)}
+                    className="cursor-pointer"
+                  >
                     <TableCell className="max-w-[12rem] truncate text-sm text-text-secondary">{member.full_name}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
                     <TableCell className="max-w-[14rem] truncate text-sm text-text-secondary">{membership.currentPlanLabel || '—'}</TableCell>
@@ -642,22 +646,46 @@ export default function AdminMembers() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-wrap justify-end gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => openEditMemberModal(member)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openEditMemberModal(member)
+                          }}
+                        >
                           Edit
                         </Button>
                         {membership.action === 'view' ? (
-                          <Button size="sm" variant="secondary" onClick={() => openViewMembershipModal(member)}>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openViewMembershipModal(member)
+                            }}
+                          >
                             View Membership
                           </Button>
                         ) : (
-                          <Button size="sm" variant="secondary" onClick={() => openAssignSubscriptionModal(member)}>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openAssignSubscriptionModal(member)
+                            }}
+                          >
                             {membership.action === 'renew' ? 'Renew Membership' : 'Assign Plan'}
                           </Button>
                         )}
                         <Button
                           size="sm"
                           className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
-                          onClick={() => handleDeleteMember(member)}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleDeleteMember(member)
+                          }}
                         >
                           Delete
                         </Button>

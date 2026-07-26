@@ -34,6 +34,7 @@ export interface RecentRegistration {
 export interface AdminDashboardResponse {
   total_members: number;
   active_members: number;
+  total_trainers?: number | null;
   inactive_members?: number | null;
   monthly_revenue: number | null;
   expiring_memberships: number | null;

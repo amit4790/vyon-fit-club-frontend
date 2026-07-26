@@ -16,15 +16,52 @@ import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { PlanFamilyRecord } from '../../types'
+import { formatCurrency, formatPlanDurationSuffix } from '../../utils/format'
 
 function money(value: number): string {
-  return `INR ${value.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
+  return formatCurrency(value)
 }
 
 export default function AdminMembershipPlans() {
+    const getFamilyOrder = (name: string): number => {
+      const normalized = name.toUpperCase()
+      if (normalized.includes('BASIC')) return 1
+      if (normalized.includes('ADVANCE')) return 2
+      if (normalized.includes('PRO')) return 3
+      return 99
+    }
+
+    const rewriteFeatures = (familyName: string, features: string[]): string[] => {
+      const normalized = familyName.toUpperCase()
+      if (normalized.includes('BASIC')) {
+        return [
+          'Gym access during standard hours',
+          'Cardio and strength zones',
+          '1 onboarding session',
+          'Locker support',
+        ]
+      }
+      if (normalized.includes('ADVANCE')) {
+        return [
+          'All Basic plan features +',
+          'Group class access',
+          'Monthly body composition tracking',
+          'Nutrition guidance',
+        ]
+      }
+      if (normalized.includes('PRO')) {
+        return [
+          'All Advance plan features +',
+          '1:1 personal training sessions',
+          'Customized diet plan',
+          'Green Tea / Black Coffee',
+          'Passive Stretching',
+          'Foot Reflexology',
+        ]
+      }
+      return features
+    }
+
   const navigate = useNavigate()
   const [families, setFamilies] = useState<PlanFamilyRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -130,14 +167,14 @@ export default function AdminMembershipPlans() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {families.map((family) => (
+          {[...families].sort((a, b) => getFamilyOrder(a.family) - getFamilyOrder(b.family)).map((family) => (
             <Card key={family.family} className="p-5">
               <div className="flex flex-col gap-2 mb-4">
                 <h3 className="text-xl font-bold tracking-wide text-[#C92A4B]">{family.family}</h3>
                 <p className="text-sm text-text-secondary">{family.description || 'No description available.'}</p>
                 {family.includes.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {family.includes.map((item) => (
+                    {rewriteFeatures(family.family, family.includes).map((item) => (
                       <span
                         key={`${family.family}-${item}`}
                         className="text-xs rounded-full px-3 py-1 bg-bg-secondary border border-border-light text-text-secondary"
@@ -164,7 +201,7 @@ export default function AdminMembershipPlans() {
                       <TableCell className="text-sm text-text-secondary">
                         {option.variant || option.duration_label}
                       </TableCell>
-                      <TableCell className="text-sm text-text-secondary">{option.duration_label}</TableCell>
+                      <TableCell className="text-sm text-text-secondary">{formatPlanDurationSuffix(option.duration_label)}</TableCell>
                       <TableCell className="text-sm text-text-secondary">
                         <div className="flex items-center gap-2">
                           <span>INR</span>

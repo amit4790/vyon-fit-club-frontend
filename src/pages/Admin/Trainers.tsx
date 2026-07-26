@@ -22,6 +22,9 @@ import { TrainerRecord } from '../../types'
 const DEFAULT_TRAINER_FORM = {
   full_name: '',
   email: '',
+  phone_number: '',
+  specialization: '',
+  temporary_password: '',
   is_active: 'true',
 }
 
@@ -76,6 +79,9 @@ export default function AdminTrainers() {
     setTrainerForm({
       full_name: trainer.full_name,
       email: trainer.email,
+      phone_number: trainer.phone_number || '',
+      specialization: trainer.specialization || '',
+      temporary_password: '',
       is_active: trainer.is_active ? 'true' : 'false',
     })
     setFormError(null)
@@ -104,6 +110,16 @@ export default function AdminTrainers() {
       return
     }
 
+    if (!trainerForm.phone_number.trim()) {
+      setFormError('Trainer Phone Number is required')
+      return
+    }
+
+    if (!editingTrainerId && !trainerForm.temporary_password.trim()) {
+      setFormError('Temporary Password is required')
+      return
+    }
+
     try {
       setIsSubmitting(true)
       setFormError(null)
@@ -111,11 +127,20 @@ export default function AdminTrainers() {
       const payload = {
         full_name: trainerForm.full_name.trim(),
         email: trainerForm.email.trim(),
+        phone_number: trainerForm.phone_number.trim(),
+        specialization: trainerForm.specialization.trim() || null,
+        temporary_password: trainerForm.temporary_password,
         is_active: trainerForm.is_active === 'true',
       }
 
       if (editingTrainerId) {
-        await adminService.updateTrainer(editingTrainerId, payload)
+        await adminService.updateTrainer(editingTrainerId, {
+          full_name: payload.full_name,
+          email: payload.email,
+          phone_number: payload.phone_number,
+          specialization: payload.specialization,
+          is_active: payload.is_active,
+        })
         success('Trainer updated', 'Trainer details were saved successfully')
       } else {
         await adminService.createTrainer(payload)
@@ -184,14 +209,20 @@ export default function AdminTrainers() {
             <TableHeader>
               <TableHeaderCell>Name</TableHeaderCell>
               <TableHeaderCell>Email</TableHeaderCell>
+              <TableHeaderCell>Phone</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
               <TableHeaderCell className="text-right">Actions</TableHeaderCell>
             </TableHeader>
             <TableBody>
               {trainers.map((trainer) => (
-                <TableRow key={trainer.id}>
+                <TableRow
+                  key={trainer.id}
+                  onClick={() => navigate(`/admin/trainers/${trainer.id}`)}
+                  className="cursor-pointer"
+                >
                   <TableCell className="text-sm text-text-secondary">{trainer.full_name}</TableCell>
                   <TableCell className="text-sm text-text-secondary">{trainer.email}</TableCell>
+                  <TableCell className="text-sm text-text-secondary">{trainer.phone_number || '-'}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
@@ -205,13 +236,23 @@ export default function AdminTrainers() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => openEditTrainerModal(trainer)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          openEditTrainerModal(trainer)
+                        }}
+                      >
                         Edit
                       </Button>
                       <Button
                         size="sm"
                         className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
-                        onClick={() => handleDeleteTrainer(trainer)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleDeleteTrainer(trainer)
+                        }}
                       >
                         Delete
                       </Button>
@@ -252,6 +293,24 @@ export default function AdminTrainers() {
             value={trainerForm.email}
             onChange={(event) => updateFormField('email', event.target.value)}
           />
+          <Input
+            label="Phone Number *"
+            value={trainerForm.phone_number}
+            onChange={(event) => updateFormField('phone_number', event.target.value)}
+          />
+          <Input
+            label="Specialization"
+            value={trainerForm.specialization}
+            onChange={(event) => updateFormField('specialization', event.target.value)}
+          />
+          {!editingTrainerId && (
+            <Input
+              label="Temporary Password *"
+              type="password"
+              value={trainerForm.temporary_password}
+              onChange={(event) => updateFormField('temporary_password', event.target.value)}
+            />
+          )}
           <Select
             label="Status"
             value={trainerForm.is_active}

@@ -9,7 +9,6 @@ import { Avatar } from '../../../components/Avatar'
 
 interface TestimonialProps {
   name: string
-  membership: string
   text: string
   rating: number
   initials: string
@@ -17,7 +16,6 @@ interface TestimonialProps {
 
 const TestimonialCard: React.FC<TestimonialProps> = ({
   name,
-  membership,
   text,
   rating,
   initials,
@@ -51,7 +49,6 @@ const TestimonialCard: React.FC<TestimonialProps> = ({
         <Avatar initials={initials} size="sm" />
         <div>
           <h4 className="font-bold text-sm text-neutral-100">{name}</h4>
-          <p className="caption text-neutral-400">{membership}</p>
         </div>
       </div>
     </div>
@@ -64,35 +61,30 @@ export const Testimonials: React.FC = () => {
   const testimonials: TestimonialProps[] = [
     {
       name: 'Arjun Sharma',
-      membership: 'Elite Member',
       text: 'VYON transformed my fitness journey. The trainers are incredibly knowledgeable and supportive. Best decision I made!',
       rating: 5,
       initials: 'AS',
     },
     {
       name: 'Priya Kapoor',
-      membership: 'Ultimate Member',
       text: 'The facilities are world-class and the community is amazing. I love coming here every day.',
       rating: 5,
       initials: 'PK',
     },
     {
       name: 'Rahul Verma',
-      membership: 'Pro Member',
       text: 'Personal training sessions have been game-changing. Highly recommend VYON to anyone serious about fitness.',
       rating: 5,
       initials: 'RV',
     },
     {
       name: 'Neha Patel',
-      membership: 'Elite Member',
       text: 'The group classes are so motivating, and the nutrition guidance really helped me reach my goals faster.',
       rating: 5,
       initials: 'NP',
     },
     {
       name: 'Vikram Singh',
-      membership: 'Ultimate Member',
       text: 'Premium experience from start to finish. The trainers customize everything to match my fitness goals perfectly.',
       rating: 5,
       initials: 'VS',

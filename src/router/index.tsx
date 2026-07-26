@@ -18,9 +18,14 @@ import AdminPayments from '../pages/Admin/Payments'
 import AdminReports from '../pages/Admin/Reports'
 import AdminSettings from '../pages/Admin/Settings'
 import AdminTrainers from '../pages/Admin/Trainers'
+import AdminProfile from '../pages/Admin/Profile'
+import AdminUsers from '../pages/Admin/Admins'
+import AdminMemberDetails from '../pages/Admin/MemberDetails'
+import AdminTrainerDetails from '../pages/Admin/TrainerDetails'
 import Trainer from '../pages/Trainer'
 import Member from '../pages/Member'
 import { AuthService } from '../services/auth'
+import { USER_ROLES } from '../auth/roles'
 
 const router = createBrowserRouter([
   {
@@ -53,14 +58,17 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <Admin /> },
           { path: 'members', element: <AdminMembers /> },
+          { path: 'members/:memberId', element: <AdminMemberDetails /> },
           { path: 'membership-plans', element: <AdminMembershipPlans /> },
           { path: 'subscriptions/:subscriptionId/payment', element: <MembershipPayment /> },
           { path: 'trainers', element: <AdminTrainers /> },
+          { path: 'trainers/:trainerId', element: <AdminTrainerDetails /> },
           { path: 'payments', element: <AdminPayments /> },
           { path: 'attendance', element: <AdminAttendance /> },
           { path: 'reports', element: <AdminReports /> },
-          { path: 'settings', element: <AdminSettings /> },
-          { path: 'profile', element: <Navigate to="/admin/dashboard" replace /> },
+          { path: 'admins', element: <RequireSuperAdminAccess><AdminUsers /></RequireSuperAdminAccess> },
+          { path: 'settings', element: <RequireSuperAdminAccess><AdminSettings /></RequireSuperAdminAccess> },
+          { path: 'profile', element: <AdminProfile /> },
           { path: 'change-password', element: <Navigate to="/admin/dashboard" replace /> },
         ],
       },
@@ -99,6 +107,14 @@ function RequireAdminAccess() {
   }
 
   return <Outlet />
+}
+
+function RequireSuperAdminAccess({ children }: { children: JSX.Element }) {
+  if (!AuthService.isAuthenticated() || AuthService.getUserRole() !== USER_ROLES.SUPER_ADMIN) {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
+  return children
 }
 
 export function AppRouter() {

@@ -1,28 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthService } from '../../api/api'
-import { ApiErrorHandler } from '../../api/errors'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
-import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
-import { InvoiceRecord, MemberRecord } from '../../types'
-
-function money(value: number): string {
-  return `INR ${value.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
+import { ReportsSummaryRecord } from '../../types'
+import { formatCurrency, formatNumber } from '../../utils/format'
 
 export default function AdminReports() {
   const navigate = useNavigate()
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([])
-  const [members, setMembers] = useState<MemberRecord[]>([])
-  const [expiringCount, setExpiringCount] = useState(0)
+  const [summary, setSummary] = useState<ReportsSummaryRecord | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { toasts, removeToast, error: errorToast } = useToast()
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -38,43 +28,19 @@ export default function AdminReports() {
       if (showLoader) {
         setIsLoading(true)
       }
+      setLoadError(null)
 
-      const [invoiceResponse, memberResponse, expiringResponse] = await Promise.all([
-        adminService.getInvoices({ page: 1, pageSize: 100 }),
-        adminService.getMembers({ page: 1, pageSize: 100 }),
-        adminService.getExpiringSubscriptions({ days: 30, page: 1, pageSize: 100 }),
-      ])
-
-      setInvoices(invoiceResponse.data)
-      setMembers(memberResponse.data)
-      setExpiringCount(expiringResponse.pagination.total_items)
+      const response = await adminService.getReportsSummary()
+      setSummary(response.data)
     } catch (err: any) {
-      const apiError = ApiErrorHandler.parse(err)
-      errorToast('Failed to load report data', apiError.message)
+      const message = err?.message || 'Unable to load reports right now.'
+      setLoadError(message)
     } finally {
       if (showLoader) {
         setIsLoading(false)
       }
     }
   }
-
-  const summary = useMemo(() => {
-    const activeMembers = members.filter((item) => item.status === 'active').length
-    const paidInvoices = invoices.filter((item) => item.status === 'paid')
-    const pendingInvoices = invoices.filter((item) => item.status === 'pending')
-
-    const paidAmount = paidInvoices.reduce((sum, item) => sum + item.amount, 0)
-    const pendingAmount = pendingInvoices.reduce((sum, item) => sum + item.amount, 0)
-
-    return {
-      totalMembers: members.length,
-      activeMembers,
-      paidInvoices: paidInvoices.length,
-      pendingInvoices: pendingInvoices.length,
-      paidAmount,
-      pendingAmount,
-    }
-  }, [members, invoices])
 
   const handleLogout = () => {
     AuthService.logout()
@@ -109,51 +75,55 @@ export default function AdminReports() {
         <Card className="p-8">
           <p className="text-center text-text-secondary">Loading report data...</p>
         </Card>
+      ) : loadError ? (
+        <Card className="p-8">
+          <p className="text-center text-text-secondary">{loadError}</p>
+        </Card>
+      ) : !summary ? (
+        <Card className="p-8">
+          <p className="text-center text-text-secondary">No report data available.</p>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <Card className="p-5">
-            <p className="text-xs uppercase tracking-wide text-text-secondary">Members</p>
-            <p className="text-3xl font-semibold text-primary mt-2">{summary.totalMembers}</p>
-            <p className="text-sm text-text-secondary mt-1">{summary.activeMembers} active</p>
+            <p className="text-xs uppercase tracking-wide text-text-secondary">Total Members</p>
+            <p className="text-3xl font-semibold text-primary mt-2">{formatNumber(summary.total_members)}</p>
+            <p className="text-sm text-text-secondary mt-1">{formatNumber(summary.active_members)} active</p>
           </Card>
 
           <Card className="p-5">
-            <p className="text-xs uppercase tracking-wide text-text-secondary">Invoices</p>
-            <p className="text-3xl font-semibold text-primary mt-2">{invoices.length}</p>
+            <p className="text-xs uppercase tracking-wide text-text-secondary">Total Invoices</p>
+            <p className="text-3xl font-semibold text-primary mt-2">{formatNumber(summary.total_invoices)}</p>
             <p className="text-sm text-text-secondary mt-1">
-              {summary.paidInvoices} paid | {summary.pendingInvoices} pending
+              {formatNumber(summary.paid_invoices)} paid | {formatNumber(summary.pending_invoices)} pending
             </p>
           </Card>
 
           <Card className="p-5">
             <p className="text-xs uppercase tracking-wide text-text-secondary">Expiring in 30 Days</p>
-            <p className="text-3xl font-semibold text-primary mt-2">{expiringCount}</p>
+            <p className="text-3xl font-semibold text-primary mt-2">{formatNumber(summary.expiring_memberships_next_30_days)}</p>
             <p className="text-sm text-text-secondary mt-1">Needs renewal follow-up</p>
           </Card>
 
           <Card className="p-5">
             <p className="text-xs uppercase tracking-wide text-text-secondary">Collected Revenue</p>
-            <p className="text-2xl font-semibold text-success mt-2">{money(summary.paidAmount)}</p>
-            <p className="text-sm text-text-secondary mt-1">Paid invoices total</p>
+            <p className="text-2xl font-semibold text-success mt-2">{formatCurrency(summary.collected_revenue)}</p>
+            <p className="text-sm text-text-secondary mt-1">Total amount received from paid invoices.</p>
           </Card>
 
           <Card className="p-5">
             <p className="text-xs uppercase tracking-wide text-text-secondary">Pending Revenue</p>
-            <p className="text-2xl font-semibold text-accent mt-2">{money(summary.pendingAmount)}</p>
-            <p className="text-sm text-text-secondary mt-1">Awaiting payment</p>
+            <p className="text-2xl font-semibold text-accent mt-2">{formatCurrency(summary.pending_revenue)}</p>
+            <p className="text-sm text-text-secondary mt-1">Total outstanding amount from unpaid invoices.</p>
           </Card>
 
           <Card className="p-5">
             <p className="text-xs uppercase tracking-wide text-text-secondary">Average Invoice Value</p>
-            <p className="text-2xl font-semibold text-primary mt-2">
-              {money(invoices.length > 0 ? (summary.paidAmount + summary.pendingAmount) / invoices.length : 0)}
-            </p>
+            <p className="text-2xl font-semibold text-primary mt-2">{formatCurrency(summary.average_invoice_value)}</p>
             <p className="text-sm text-text-secondary mt-1">Across all invoices</p>
           </Card>
         </div>
       )}
-
-      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

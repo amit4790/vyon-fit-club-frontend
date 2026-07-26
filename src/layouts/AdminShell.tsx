@@ -1,8 +1,9 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BarChart3, CalendarCheck2, ChevronDown, CreditCard, FileBarChart2, LogOut, Settings, User, UserCog, Users, WalletCards } from 'lucide-react'
 import { USER_ROLES } from '../auth/roles'
 import { AuthService } from '../services/auth'
+import { toTitleCase } from '../utils/format'
 
 interface AdminShellProps {
   title: string
@@ -27,24 +28,43 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Payments', path: '/admin/payments', icon: <CreditCard size={18} /> },
   { label: 'Attendance', path: '/admin/attendance', icon: <CalendarCheck2 size={18} /> },
   { label: 'Reports', path: '/admin/reports', icon: <FileBarChart2 size={18} /> },
-  { label: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
 ]
 
 export default function AdminShell({ title, subtitle, userName, onLogout, children }: AdminShellProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const isSuperAdmin = AuthService.getUserRole() === USER_ROLES.SUPER_ADMIN
 
   const navItems: NavItem[] = isSuperAdmin
     ? [
         ...NAV_ITEMS.slice(0, 7),
-        { label: 'Admins', path: '/admin/settings?tab=admins', icon: <User size={18} /> },
-        ...NAV_ITEMS.slice(7),
+        { label: 'Admins', path: '/admin/admins', icon: <User size={18} /> },
+        { label: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
       ]
     : NAV_ITEMS
 
-  const isActive = (path: string) => location.pathname === path.split('?')[0]
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`)
+  }
+
+  const displayUserName = toTitleCase(userName || 'Admin')
+
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!profileMenuRef.current) {
+        return
+      }
+
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleDocumentClick)
+    return () => document.removeEventListener('mousedown', handleDocumentClick)
+  }, [])
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex">
@@ -106,7 +126,7 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
               <h1 className="text-2xl lg:text-[1.75rem] font-semibold text-text-secondary leading-tight">{title}</h1>
               <p className="text-text-secondary mt-1 text-sm">{subtitle}</p>
             </div>
-            <div className="hidden sm:block relative">
+            <div className="hidden sm:block relative" ref={profileMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen((isOpen) => !isOpen)}
@@ -115,18 +135,31 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
                 aria-expanded={isProfileMenuOpen}
               >
                 <User size={16} />
-                <span>{userName}</span>
+                <span>{displayUserName}</span>
                 <ChevronDown size={16} />
               </button>
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-lg border border-border-light bg-bg-card p-1 shadow-lg" role="menu">
-                  <button type="button" onClick={() => navigate('/admin/profile')} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false)
+                      navigate('/admin/profile')
+                    }}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+                    role="menuitem"
+                  >
                     Profile
                   </button>
-                  <button type="button" onClick={() => navigate('/admin/change-password')} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
-                    Change Password
-                  </button>
-                  <button type="button" onClick={onLogout} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false)
+                      onLogout()
+                    }}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+                    role="menuitem"
+                  >
                     Logout
                   </button>
                 </div>
