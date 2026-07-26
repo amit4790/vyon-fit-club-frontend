@@ -39,7 +39,7 @@ export default function AdminTrainers() {
   const { toasts, removeToast, success, error: errorToast } = useToast()
 
   useEffect(() => {
-    if (!AuthService.isAuthenticated() || !AuthService.hasRole('admin')) {
+    if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
       navigate('/login')
       return
     }

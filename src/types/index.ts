@@ -2,11 +2,13 @@
  * Common TypeScript types and interfaces
  */
 
+import { UserRole } from '../auth/roles'
+
 export interface User {
   id: number
   name: string
   email: string
-  role: 'admin' | 'trainer' | 'member'
+  role: UserRole
 }
 
 export interface Member extends User {
@@ -125,6 +127,28 @@ export interface TrainerOperationApiResponse {
 
 export interface TrainerDeleteApiResponse {
   message: string
+}
+
+export interface AdminUserRecord {
+  id: number
+  full_name: string
+  email: string
+  phone_number: string | null
+  role: string
+  is_active: boolean
+}
+
+export interface AdminUserPayload {
+  full_name: string
+  email: string
+  phone_number: string
+  password: string
+  is_active?: boolean
+}
+
+export interface AdminUserOperationApiResponse {
+  message: string
+  data: AdminUserRecord
 }
 
 export interface SubscriptionRecord {

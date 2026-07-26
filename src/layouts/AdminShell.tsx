@@ -1,6 +1,8 @@
-﻿import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BadgePlus, BarChart3, CalendarCheck2, CreditCard, FileBarChart2, LogOut, Settings, UserCog, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CalendarCheck2, ChevronDown, CreditCard, FileBarChart2, LogOut, Settings, User, UserCog, Users, WalletCards } from 'lucide-react'
+import { USER_ROLES } from '../auth/roles'
+import { AuthService } from '../services/auth'
 
 interface AdminShellProps {
   title: string
@@ -18,55 +20,31 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    label: 'Dashboard',
-    path: '/admin/dashboard',
-    icon: <BarChart3 size={18} />,
-  },
-  {
-    label: 'Members',
-    path: '/admin/members',
-    icon: <Users size={18} />,
-  },
-  {
-    label: 'Trainers',
-    path: '/admin/trainers',
-    icon: <UserCog size={18} />,
-  },
-  {
-    label: 'Membership Plans',
-    path: '/admin/membership-plans',
-    icon: <WalletCards size={18} />,
-  },
-  {
-    label: 'Payments',
-    path: '/admin/payments',
-    icon: <CreditCard size={18} />,
-  },
-  {
-    label: 'Attendance',
-    path: '/admin/attendance',
-    icon: <CalendarCheck2 size={18} />,
-  },
-  {
-    label: 'Reports',
-    path: '/admin/reports',
-    icon: <FileBarChart2 size={18} />,
-  },
-  {
-    label: 'Settings',
-    path: '/admin/settings',
-    icon: <Settings size={18} />,
-  },
+  { label: 'Dashboard', path: '/admin/dashboard', icon: <BarChart3 size={18} /> },
+  { label: 'Members', path: '/admin/members', icon: <Users size={18} /> },
+  { label: 'Trainers', path: '/admin/trainers', icon: <UserCog size={18} /> },
+  { label: 'Membership Plans', path: '/admin/membership-plans', icon: <WalletCards size={18} /> },
+  { label: 'Payments', path: '/admin/payments', icon: <CreditCard size={18} /> },
+  { label: 'Attendance', path: '/admin/attendance', icon: <CalendarCheck2 size={18} /> },
+  { label: 'Reports', path: '/admin/reports', icon: <FileBarChart2 size={18} /> },
+  { label: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
 ]
 
 export default function AdminShell({ title, subtitle, userName, onLogout, children }: AdminShellProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const isSuperAdmin = AuthService.getUserRole() === USER_ROLES.SUPER_ADMIN
 
-  const isActive = (path: string) => {
-    return location.pathname === path
-  }
+  const navItems: NavItem[] = isSuperAdmin
+    ? [
+        ...NAV_ITEMS.slice(0, 7),
+        { label: 'Admins', path: '/admin/settings?tab=admins', icon: <User size={18} /> },
+        ...NAV_ITEMS.slice(7),
+      ]
+    : NAV_ITEMS
+
+  const isActive = (path: string) => location.pathname === path.split('?')[0]
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary flex">
@@ -75,11 +53,7 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
           onClick={() => navigate('/')}
           className="h-20 px-5 flex items-center gap-3 border-b border-border-light hover:bg-white/5 transition-colors"
         >
-          <img
-            src="/src/assets/images/logo/vyon-logo.jpg"
-            alt="VYON FIT CLUB"
-            className="h-12 w-12 object-contain rounded"
-          />
+          <img src="/src/assets/images/logo/vyon-logo.jpg" alt="VYON FIT CLUB" className="h-12 w-12 object-contain rounded" />
           <div className="text-left">
             <p className="font-bold text-lg leading-tight tracking-tight">VYON</p>
             <p className="text-text-secondary text-xs">Premium Fitness Club</p>
@@ -87,22 +61,17 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
         </button>
 
         <nav className="px-3 py-4 space-y-1.5 flex-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(item.path)
 
             if (item.comingSoon) {
               return (
-                <div
-                  key={item.path}
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-text-secondary bg-bg-secondary/60 border border-border-light"
-                >
+                <div key={item.path} className="flex items-center justify-between rounded-lg px-3 py-2.5 text-text-secondary bg-bg-secondary/60 border border-border-light">
                   <div className="flex items-center gap-3">
                     {item.icon}
                     <span className="text-sm font-medium">{item.label}</span>
                   </div>
-                  <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-border-light text-text-secondary">
-                    Coming Soon
-                  </span>
+                  <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-border-light text-text-secondary">Coming Soon</span>
                 </div>
               )
             }
@@ -112,9 +81,7 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-primary text-text-secondary shadow'
-                    : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
+                  active ? 'bg-primary text-text-secondary shadow' : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
                 }`}
               >
                 {item.icon}
@@ -125,10 +92,7 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
         </nav>
 
         <div className="p-3 border-t border-border-light">
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark rounded-lg transition-colors text-sm font-medium"
-          >
+          <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark rounded-lg transition-colors text-sm font-medium">
             <LogOut size={16} />
             Logout
           </button>
@@ -142,9 +106,31 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
               <h1 className="text-2xl lg:text-[1.75rem] font-semibold text-text-secondary leading-tight">{title}</h1>
               <p className="text-text-secondary mt-1 text-sm">{subtitle}</p>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-text-secondary">
-              <BadgePlus size={16} />
-              <span>Welcome, {userName}</span>
+            <div className="hidden sm:block relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen((isOpen) => !isOpen)}
+                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                aria-haspopup="menu"
+                aria-expanded={isProfileMenuOpen}
+              >
+                <User size={16} />
+                <span>{userName}</span>
+                <ChevronDown size={16} />
+              </button>
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-lg border border-border-light bg-bg-card p-1 shadow-lg" role="menu">
+                  <button type="button" onClick={() => navigate('/admin/profile')} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
+                    Profile
+                  </button>
+                  <button type="button" onClick={() => navigate('/admin/change-password')} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
+                    Change Password
+                  </button>
+                  <button type="button" onClick={onLogout} className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary" role="menuitem">
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -154,4 +140,3 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
     </div>
   )
 }
-

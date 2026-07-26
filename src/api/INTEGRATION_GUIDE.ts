@@ -63,9 +63,9 @@ USAGE EXAMPLES
 import { AuthService, LoginRequest } from '@/api/api'
 import { ApiErrorHandler } from '@/api/errors'
 
-const handleLogin = async (email: string, password: string) => {
+const handleLogin = async (identifier: string, password: string) => {
   try {
-    const credentials: LoginRequest = { email, password }
+    const credentials: LoginRequest = { identifier, password }
     const response = await AuthService.login(credentials)
     
     // User data automatically stored in localStorage
@@ -104,8 +104,8 @@ if (AuthService.isAuthenticated()) {
 }
 
 // Check specific role
-if (AuthService.hasRole('admin')) {
-  // User is admin
+if (AuthService.hasRole('SUPER_ADMIN')) {
+  // User is a super administrator
 }
 
 // Get user info

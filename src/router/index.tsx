@@ -20,6 +20,7 @@ import AdminSettings from '../pages/Admin/Settings'
 import AdminTrainers from '../pages/Admin/Trainers'
 import Trainer from '../pages/Trainer'
 import Member from '../pages/Member'
+import { AuthService } from '../services/auth'
 
 const router = createBrowserRouter([
   {
@@ -47,43 +48,21 @@ const router = createBrowserRouter([
       },
       {
         path: '/admin',
-        element: <Navigate to="/admin/dashboard" replace />,
-      },
-      {
-        path: '/admin/dashboard',
-        element: <Admin />,
-      },
-      {
-        path: '/admin/members',
-        element: <AdminMembers />,
-      },
-      {
-        path: '/admin/membership-plans',
-        element: <AdminMembershipPlans />,
-      },
-      {
-        path: '/admin/subscriptions/:subscriptionId/payment',
-        element: <MembershipPayment />,
-      },
-      {
-        path: '/admin/trainers',
-        element: <AdminTrainers />,
-      },
-      {
-        path: '/admin/payments',
-        element: <AdminPayments />,
-      },
-      {
-        path: '/admin/attendance',
-        element: <AdminAttendance />,
-      },
-      {
-        path: '/admin/reports',
-        element: <AdminReports />,
-      },
-      {
-        path: '/admin/settings',
-        element: <AdminSettings />,
+        element: <RequireAdminAccess />,
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: 'dashboard', element: <Admin /> },
+          { path: 'members', element: <AdminMembers /> },
+          { path: 'membership-plans', element: <AdminMembershipPlans /> },
+          { path: 'subscriptions/:subscriptionId/payment', element: <MembershipPayment /> },
+          { path: 'trainers', element: <AdminTrainers /> },
+          { path: 'payments', element: <AdminPayments /> },
+          { path: 'attendance', element: <AdminAttendance /> },
+          { path: 'reports', element: <AdminReports /> },
+          { path: 'settings', element: <AdminSettings /> },
+          { path: 'profile', element: <Navigate to="/admin/dashboard" replace /> },
+          { path: 'change-password', element: <Navigate to="/admin/dashboard" replace /> },
+        ],
       },
       {
         path: '/trainer',
@@ -112,6 +91,14 @@ function ScrollToTopLayout() {
       <Outlet />
     </>
   )
+}
+
+function RequireAdminAccess() {
+  if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Outlet />
 }
 
 export function AppRouter() {

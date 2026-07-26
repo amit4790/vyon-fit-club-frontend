@@ -3,9 +3,11 @@
  * Type definitions for API requests and responses
  */
 
+import { UserRole } from '../auth/roles'
+
 // Authentication Types
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -13,7 +15,7 @@ export interface UserInfo {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'trainer' | 'member';
+  role: UserRole;
 }
 
 export interface LoginResponse {

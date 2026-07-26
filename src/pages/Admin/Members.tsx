@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '../../components/Table'
 import { ToastContainer, useToast } from '../../components/Toast'
+import { USER_ROLES } from '../../auth/roles'
 import { adminService } from '../../services/adminService'
 import {
   ExpiringSubscriptionsApiResponse,
@@ -85,6 +86,7 @@ export default function AdminMembers() {
   >([])
   const [expiringDays, setExpiringDays] = useState(7)
   const [expiringTotal, setExpiringTotal] = useState(0)
+  const [expiringUnavailable, setExpiringUnavailable] = useState(false)
   const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
   const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
   const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
@@ -97,7 +99,7 @@ export default function AdminMembers() {
   const { toasts, removeToast, success, error: errorToast } = useToast()
 
   useEffect(() => {
-    if (!AuthService.isAuthenticated() || !AuthService.hasRole('admin')) {
+    if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
       navigate('/login')
       return
     }
@@ -238,9 +240,12 @@ export default function AdminMembers() {
       })
       setExpiringSubscriptions(response.data)
       setExpiringTotal(response.pagination.total_items)
-    } catch (err: any) {
-      const apiError = ApiErrorHandler.parse(err)
-      errorToast('Failed to load expiring subscriptions', apiError.message)
+      setExpiringUnavailable(false)
+    } catch (err) {
+      console.error('Failed to load expiring subscriptions', err)
+      setExpiringSubscriptions([])
+      setExpiringTotal(0)
+      setExpiringUnavailable(true)
     }
   }
 
@@ -509,8 +514,17 @@ export default function AdminMembers() {
     return 'bg-gray-100 text-gray-700'
   }
 
+  const membershipStatusLabel = (status: 'active' | 'expired' | 'none') => {
+    if (status === 'none') {
+      return 'No Membership'
+    }
+
+    return status.charAt(0).toUpperCase() + status.slice(1)
+  }
+
   const userInfo = AuthService.getUserInfo()
   const userName = userInfo?.name || 'Admin'
+  const isSuperAdmin = userInfo?.role === USER_ROLES.SUPER_ADMIN
 
   return (
     <AdminShell
@@ -528,7 +542,14 @@ export default function AdminMembers() {
             </p>
           </div>
 
-          <Button size="sm" onClick={openCreateMemberModal}>Add Member</Button>
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <Button size="sm" variant="secondary" onClick={() => navigate('/admin/settings?tab=admins')}>
+                Add Admin
+              </Button>
+            )}
+            <Button size="sm" onClick={openCreateMemberModal}>Add Member</Button>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 mb-4">
@@ -573,6 +594,11 @@ export default function AdminMembers() {
               ))}
             </div>
           )}
+          {expiringUnavailable && (
+            <p className="mt-3 text-xs text-text-secondary">
+              Expiring memberships are unavailable right now. Please try again shortly.
+            </p>
+          )}
         </div>
 
         {membersLoading ? (
@@ -581,16 +607,13 @@ export default function AdminMembers() {
           <p className="text-gray-500 py-8 text-center">No members found</p>
         ) : (
           <>
-            <Table>
+            <Table className="overflow-x-visible">
               <TableHeader>
                 <TableHeaderCell>Name</TableHeaderCell>
                 <TableHeaderCell>Mobile</TableHeaderCell>
-                <TableHeaderCell>Joining Date</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
-                <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Current Plan</TableHeaderCell>
-                <TableHeaderCell>Membership Status</TableHeaderCell>
                 <TableHeaderCell>Expiry Date</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
                 <TableHeaderCell className="text-right">Actions</TableHeaderCell>
               </TableHeader>
               <TableBody>
@@ -606,32 +629,19 @@ export default function AdminMembers() {
 
                     return (
                   <TableRow key={member.id}>
-                    <TableCell className="text-sm text-text-secondary">{member.full_name}</TableCell>
+                    <TableCell className="max-w-[12rem] truncate text-sm text-text-secondary">{member.full_name}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{member.joining_date}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-                          member.status === 'active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-text-secondary">{member.email || '-'}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{membership.currentPlanLabel || '-'}</TableCell>
+                    <TableCell className="max-w-[14rem] truncate text-sm text-text-secondary">{membership.currentPlanLabel || '—'}</TableCell>
+                    <TableCell className="text-sm text-text-secondary">{membership.expiryDate || '—'}</TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${membershipStatusBadge(membership.membershipStatus)}`}
                       >
-                        {membership.membershipStatus.charAt(0).toUpperCase() + membership.membershipStatus.slice(1)}
+                        {membershipStatusLabel(membership.membershipStatus)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-text-secondary">{membership.expiryDate || '-'}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
                         <Button size="sm" variant="secondary" onClick={() => openEditMemberModal(member)}>
                           Edit
                         </Button>

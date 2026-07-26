@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!AuthService.isAuthenticated() || !AuthService.hasRole('admin')) {
+    if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
       navigate('/login')
       return
     }

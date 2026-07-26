@@ -33,7 +33,7 @@ export default function AdminMembershipPlans() {
   const { toasts, removeToast, error: errorToast } = useToast()
 
   useEffect(() => {
-    if (!AuthService.isAuthenticated() || !AuthService.hasRole('admin')) {
+    if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
       navigate('/login')
       return
     }

@@ -46,7 +46,7 @@ export default function Member() {
   }
 
   const userInfo = AuthService.getUserInfo()
-  const userName = userInfo?.name || 'John Doe'
+  const userName = userInfo?.name || ''
 
   if (isLoading) {
     return (

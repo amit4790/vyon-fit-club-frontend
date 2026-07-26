@@ -13,7 +13,7 @@ export const Hero: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false)
   const navigate = useNavigate()
   const role = AuthService.getUserRole()
-  const hideLandingCtas = role === 'admin' || role === 'trainer'
+  const hideLandingCtas = role === 'SUPER_ADMIN'
 
   useEffect(() => {
     setIsLoaded(true)

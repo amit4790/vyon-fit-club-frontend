@@ -22,6 +22,8 @@ import {
   TrainerListApiResponse,
   TrainerOperationApiResponse,
   TrainerPayload,
+  AdminUserPayload,
+  AdminUserOperationApiResponse,
 } from '../types'
 
 export const adminService = {
@@ -114,6 +116,9 @@ export const adminService = {
 
   createTrainer: (payload: TrainerPayload) =>
     httpClient.post<TrainerOperationApiResponse>('/admin/trainers', payload),
+
+  createAdminUser: (payload: AdminUserPayload) =>
+    httpClient.post<AdminUserOperationApiResponse>('/admin/users/admins', payload),
 
   updateTrainer: (trainerId: number, payload: Partial<TrainerPayload>) =>
     httpClient.put<TrainerOperationApiResponse>(`/admin/trainers/${trainerId}`, payload),

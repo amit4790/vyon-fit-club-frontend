@@ -19,8 +19,8 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onSearch,
   notifications = 0,
-  userInitials = 'JD',
-  userName = 'John Doe',
+  userInitials = '',
+  userName = '',
   onLogout,
   onSettings,
 }) => {
