@@ -11,6 +11,7 @@ import { ApiErrorHandler } from '../../api/errors'
 import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { USER_ROLES } from '../../auth/roles'
+import vyonLogo from '../../assets/images/logo/vyon-logo.jpg'
 
 interface ToastState {
   show: boolean
@@ -89,7 +90,7 @@ export default function Login() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
               <img
-                src="/src/assets/images/logo/vyon-logo.jpg"
+                src={vyonLogo}
                 alt="VYON FIT CLUB"
                 className="h-10 w-10 object-contain rounded transition-transform duration-300 group-hover:scale-110"
               />

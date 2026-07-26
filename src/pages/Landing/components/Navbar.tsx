@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { AuthService } from '../../../api/api'
+import vyonLogo from '../../../assets/images/logo/vyon-logo.jpg'
 
 export const LandingNavbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -83,7 +84,7 @@ export const LandingNavbar: React.FC = () => {
           {/* Premium Logo - increased by 10% with refined spacing */}
           <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
             <img
-              src="/src/assets/images/logo/vyon-logo.jpg"
+              src={vyonLogo}
               alt="VYON FIT CLUB"
               className="h-11 w-11 object-contain rounded transition-transform duration-300 group-hover:scale-110"
             />

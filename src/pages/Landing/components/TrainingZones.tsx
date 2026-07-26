@@ -4,6 +4,9 @@
  */
 
 import React from 'react'
+import cardioZoneImage from '../../../assets/images/gym/cardio-zone.png'
+import functionalZoneImage from '../../../assets/images/gym/functional-zone.png'
+import strengthZoneImage from '../../../assets/images/gym/strength-zone.png'
 
 interface ZoneCardProps {
   title: string
@@ -40,17 +43,17 @@ export const TrainingZones: React.FC = () => {
     {
       title: 'Strength Zone',
       description: 'Premium equipment for building muscle and power',
-      image: '/src/assets/images/gym/strength-zone.png',
+      image: strengthZoneImage,
     },
     {
       title: 'Functional Zone',
       description: 'Specialized area for functional training programs',
-      image: '/src/assets/images/gym/functional-zone.png',
+      image: functionalZoneImage,
     },
     {
       title: 'Cardio Zone',
       description: 'State-of-the-art cardio equipment and machines',
-      image: '/src/assets/images/gym/cardio-zone.png',
+      image: cardioZoneImage,
     },
   ]
 

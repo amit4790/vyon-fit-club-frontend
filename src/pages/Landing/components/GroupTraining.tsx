@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { Users, TrendingUp, Zap, Calendar } from 'lucide-react'
+import groupTrainingImage from '../../../assets/images/gym/group-training.png'
 
 export const GroupTraining: React.FC = () => {
   const programs = [
@@ -23,7 +24,7 @@ export const GroupTraining: React.FC = () => {
           {/* Image Container */}
           <div className="relative h-80 lg:h-[28rem] rounded-xl overflow-hidden border border-neutral-800">
             <img
-              src="/src/assets/images/gym/group-training.png"
+              src={groupTrainingImage}
               alt="Group Training"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             />

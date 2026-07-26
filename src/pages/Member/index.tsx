@@ -9,6 +9,7 @@ import { LogOut } from 'lucide-react'
 import { DashboardService, MemberDashboardResponse, AuthService } from '../../api/api'
 import { ApiErrorHandler } from '../../api/errors'
 import { Card } from '../../components/Card'
+import vyonLogo from '../../assets/images/logo/vyon-logo.jpg'
 
 export default function Member() {
   const navigate = useNavigate()
@@ -93,7 +94,7 @@ export default function Member() {
               className="flex items-center gap-4 group cursor-pointer hover:opacity-90 transition-opacity"
             >
               <img
-                src="/src/assets/images/logo/vyon-logo.jpg"
+                src={vyonLogo}
                 alt="VYON FIT CLUB"
                 className="h-16 w-16 object-contain rounded transition-transform duration-300 group-hover:scale-110"
               />

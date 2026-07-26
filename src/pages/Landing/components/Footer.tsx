@@ -6,6 +6,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react'
+import vyonLogo from '../../../assets/images/logo/vyon-logo.jpg'
 
 export const LandingFooter: React.FC = () => {
   const navigate = useNavigate()
@@ -52,7 +53,7 @@ export const LandingFooter: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <img
-                src="/src/assets/images/logo/vyon-logo.jpg"
+                src={vyonLogo}
                 alt="VYON"
                 className="h-6 w-6 rounded-md object-cover"
               />
