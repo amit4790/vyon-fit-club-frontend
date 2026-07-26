@@ -4,6 +4,8 @@
 
 import { httpClient } from '../api/http-client'
 import {
+  CapturePaymentApiResponse,
+  CapturePaymentPayload,
   ExpiringSubscriptionsApiResponse,
   InvoiceListApiResponse,
   InvoiceOperationApiResponse,
@@ -14,7 +16,12 @@ import {
   MemberOperationApiResponse,
   MemberPayload,
   PlanCatalogApiResponse,
+  PlanOptionOperationApiResponse,
   SubscriptionOperationApiResponse,
+  TrainerDeleteApiResponse,
+  TrainerListApiResponse,
+  TrainerOperationApiResponse,
+  TrainerPayload,
 } from '../types'
 
 export const adminService = {
@@ -44,11 +51,20 @@ export const adminService = {
 
   getPlanCatalog: () => httpClient.get<PlanCatalogApiResponse>('/admin/plans'),
 
+  updatePlanPrice: (planId: number, payload: { base_price: number; tax_percent?: number }) =>
+    httpClient.patch<PlanOptionOperationApiResponse>(`/admin/plans/${planId}`, payload),
+
   assignSubscription: (memberId: number, payload: { plan_id: number; start_date: string }) =>
     httpClient.post<SubscriptionOperationApiResponse>(`/admin/members/${memberId}/subscriptions`, payload),
 
   getMemberSubscriptions: (memberId: number) =>
     httpClient.get<MemberSubscriptionsApiResponse>(`/admin/members/${memberId}/subscriptions`),
+
+  getSubscriptionById: (subscriptionId: number) =>
+    httpClient.get<SubscriptionOperationApiResponse>(`/admin/subscriptions/${subscriptionId}`),
+
+  captureSubscriptionPayment: (subscriptionId: number, payload: CapturePaymentPayload) =>
+    httpClient.post<CapturePaymentApiResponse>(`/admin/subscriptions/${subscriptionId}/payment`, payload),
 
   getExpiringSubscriptions: (params: { days: number; page: number; pageSize: number }) => {
     const query = new URLSearchParams({
@@ -85,13 +101,25 @@ export const adminService = {
   getInvoiceById: (invoiceId: number) =>
     httpClient.get<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}`),
 
+  downloadInvoicePdf: (invoiceId: number) =>
+    httpClient.get<Blob>(`/admin/invoices/${invoiceId}/download`, { responseType: 'blob' }),
+
   updateInvoiceStatus: (invoiceId: number, status: InvoiceStatus) =>
     httpClient.patch<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}/status`, { status }),
 
   resendInvoice: (invoiceId: number) =>
     httpClient.post<InvoiceOperationApiResponse>(`/admin/invoices/${invoiceId}/resend`),
 
-  getTrainers: () => httpClient.get('/admin/trainers'),
+  getTrainers: () => httpClient.get<TrainerListApiResponse>('/admin/trainers'),
+
+  createTrainer: (payload: TrainerPayload) =>
+    httpClient.post<TrainerOperationApiResponse>('/admin/trainers', payload),
+
+  updateTrainer: (trainerId: number, payload: Partial<TrainerPayload>) =>
+    httpClient.put<TrainerOperationApiResponse>(`/admin/trainers/${trainerId}`, payload),
+
+  deleteTrainer: (trainerId: number) =>
+    httpClient.delete<TrainerDeleteApiResponse>(`/admin/trainers/${trainerId}`),
 
   getClasses: () => httpClient.get('/admin/classes'),
 }

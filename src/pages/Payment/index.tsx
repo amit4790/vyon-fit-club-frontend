@@ -260,8 +260,8 @@ export default function Payment() {
     <div className="w-full bg-bg-primary">
       <LandingNavbar />
 
-      <main className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="py-12">
+        <div className="max-w-6xl mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/memberships', { state: { customerInfo } })}

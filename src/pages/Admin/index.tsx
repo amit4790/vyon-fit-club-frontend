@@ -83,7 +83,7 @@ export default function AdminDashboard() {
       userName={userName}
       onLogout={handleLogout}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <Card className="p-5">
           <div className="flex flex-col">
             <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Total Members</span>
@@ -120,16 +120,16 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Button size="sm" className="font-semibold" onClick={() => navigate('/admin/members?action=add')}>
+          <Button size="md" className="font-semibold" onClick={() => navigate('/admin/members?action=add')}>
             Add Member
           </Button>
 
-          <Button size="sm" variant="secondary" className="font-semibold" onClick={() => navigate('/admin/members')}>
+          <Button size="md" variant="secondary" className="font-semibold" onClick={() => navigate('/admin/members')}>
             View Members
           </Button>
 
           <Button
-            size="sm"
+            size="md"
             variant="secondary"
             className="font-semibold"
             onClick={() => navigate('/admin/members')}
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
           </Button>
 
           <Button
-            size="sm"
+            size="md"
             variant="secondary"
             className="font-semibold"
             onClick={() => navigate('/admin/payments')}

@@ -1,6 +1,6 @@
 /**
  * Testimonials Section
- * Member reviews carousel
+ * Compact member reviews carousel with seamless loop
  */
 
 import React, { useState } from 'react'
@@ -23,27 +23,35 @@ const TestimonialCard: React.FC<TestimonialProps> = ({
   initials,
 }) => {
   return (
-    <div className="card text-center min-h-64 flex flex-col justify-between">
-      {/* Rating */}
-      <div className="flex items-center justify-center gap-1 mb-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            size={16}
-            className={i < rating ? 'fill-warning text-warning' : 'text-text-secondary'}
-          />
-        ))}
+    <div className="bg-[#161618] border border-neutral-800 rounded-xl p-6 text-center flex flex-col justify-between h-full min-h-[17rem] transition-all duration-300 hover:border-neutral-700">
+      <div>
+        {/* Rating Stars */}
+        <div className="flex items-center justify-center gap-1 mb-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              size={14}
+              className={
+                i < rating
+                  ? 'fill-amber-500 text-amber-500'
+                  : 'text-neutral-700'
+              }
+            />
+          ))}
+        </div>
+
+        {/* Review Text */}
+        <p className="caption text-neutral-300 italic leading-relaxed mb-6">
+          "{text}"
+        </p>
       </div>
 
-      {/* Text */}
-      <p className="body mb-6 text-text-secondary italic flex-1">"{text}"</p>
-
       {/* Author */}
-      <div className="flex flex-col items-center gap-3">
-        <Avatar initials={initials} size="md" />
+      <div className="flex flex-col items-center gap-2 pt-2">
+        <Avatar initials={initials} size="sm" />
         <div>
-          <h4 className="font-semibold text-text-primary">{name}</h4>
-          <p className="caption text-text-secondary">{membership}</p>
+          <h4 className="font-bold text-sm text-neutral-100">{name}</h4>
+          <p className="caption text-neutral-400">{membership}</p>
         </div>
       </div>
     </div>
@@ -92,66 +100,78 @@ export const Testimonials: React.FC = () => {
   ]
 
   const prev = () => {
-    setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
+    setActiveIndex(
+      (prev) => (prev - 1 + testimonials.length) % testimonials.length
+    )
   }
 
   const next = () => {
     setActiveIndex((prev) => (prev + 1) % testimonials.length)
   }
 
+  // Always gets 3 items wrapping around cleanly
+  const visibleTestimonials = [0, 1, 2].map((offset) => {
+    return testimonials[(activeIndex + offset) % testimonials.length]
+  })
+
   return (
-    <section className="py-20 bg-bg-primary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="landing-section bg-[#161618] text-white">
+      <div className="landing-container">
+        
         {/* Title */}
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">MEMBER TESTIMONIALS</h2>
-          <p className="body text-text-secondary">
+        <div className="landing-header">
+          <h2 className="section-title tracking-wider uppercase mb-3">
+            MEMBER TESTIMONIALS
+          </h2>
+          <p className="landing-subtitle text-neutral-400">
             Hear from our satisfied members
           </p>
         </div>
 
-        {/* Carousel */}
+        {/* Carousel Container */}
         <div className="relative">
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            {testimonials
-              .slice(activeIndex, activeIndex + 3)
-              .map((testimonial, i) => (
-                <TestimonialCard key={i} {...testimonial} />
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
+            {visibleTestimonials.map((testimonial, i) => (
+              <TestimonialCard key={i} {...testimonial} />
+            ))}
           </div>
 
-          {/* Navigation */}
+          {/* Controls & Indicator Dots */}
           <div className="flex justify-center items-center gap-4">
             <button
               onClick={prev}
-              className="p-2 bg-bg-card hover:bg-bg-secondary rounded-lg transition-colors"
+              className="p-1.5 bg-[#161618] border border-neutral-800 hover:border-neutral-700 rounded-lg text-neutral-300 transition-colors"
+              aria-label="Previous testimonials"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={18} />
             </button>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1.5">
               {testimonials.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveIndex(i)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    i >= activeIndex && i < activeIndex + 3
-                      ? 'bg-primary w-8'
-                      : 'bg-border-light'
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIndex
+                      ? 'bg-[#8B1E3F] w-6'
+                      : 'bg-neutral-800 w-1.5 hover:bg-neutral-700'
                   }`}
+                  aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
             </div>
 
             <button
               onClick={next}
-              className="p-2 bg-bg-card hover:bg-bg-secondary rounded-lg transition-colors"
+              className="p-1.5 bg-[#161618] border border-neutral-800 hover:border-neutral-700 rounded-lg text-neutral-300 transition-colors"
+              aria-label="Next testimonials"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
+
       </div>
     </section>
   )

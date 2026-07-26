@@ -28,6 +28,8 @@ export default function AdminMembershipPlans() {
   const navigate = useNavigate()
   const [families, setFamilies] = useState<PlanFamilyRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [priceEdits, setPriceEdits] = useState<Record<number, string>>({})
+  const [savingPlanId, setSavingPlanId] = useState<number | null>(null)
   const { toasts, removeToast, error: errorToast } = useToast()
 
   useEffect(() => {
@@ -57,6 +59,38 @@ export default function AdminMembershipPlans() {
     }
   }
 
+  const setPlanEditValue = (planId: number, value: string) => {
+    setPriceEdits((prev) => ({ ...prev, [planId]: value }))
+  }
+
+  const getPlanEditValue = (planId: number, currentPrice: number): string => {
+    return priceEdits[planId] ?? String(currentPrice)
+  }
+
+  const handleSavePrice = async (planId: number, currentTaxPercent: number) => {
+    const rawValue = (priceEdits[planId] ?? '').trim()
+    const nextPrice = Number(rawValue)
+
+    if (!rawValue || !Number.isFinite(nextPrice) || nextPrice <= 0) {
+      errorToast('Invalid price', 'Please enter a valid base price greater than zero.')
+      return
+    }
+
+    try {
+      setSavingPlanId(planId)
+      await adminService.updatePlanPrice(planId, {
+        base_price: nextPrice,
+        tax_percent: currentTaxPercent,
+      })
+      await loadPlans()
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Failed to update price', apiError.message)
+    } finally {
+      setSavingPlanId(null)
+    }
+  }
+
   const handleLogout = () => {
     AuthService.logout()
     navigate('/')
@@ -77,7 +111,7 @@ export default function AdminMembershipPlans() {
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Plan Catalog</h2>
             <p className="text-sm text-text-secondary mt-1">
-              Catalog is synced from backend. This view is read-only in the current phase.
+              Update base prices directly. Tax and total are recalculated automatically.
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={() => loadPlans(true)}>
@@ -99,7 +133,7 @@ export default function AdminMembershipPlans() {
           {families.map((family) => (
             <Card key={family.family} className="p-5">
               <div className="flex flex-col gap-2 mb-4">
-                <h3 className="text-lg font-semibold text-primary">{family.family}</h3>
+                <h3 className="text-xl font-bold tracking-wide text-[#C92A4B]">{family.family}</h3>
                 <p className="text-sm text-text-secondary">{family.description || 'No description available.'}</p>
                 {family.includes.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -122,6 +156,7 @@ export default function AdminMembershipPlans() {
                   <TableHeaderCell>Base Price</TableHeaderCell>
                   <TableHeaderCell>Tax</TableHeaderCell>
                   <TableHeaderCell>Total</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Action</TableHeaderCell>
                 </TableHeader>
                 <TableBody>
                   {family.options.map((option) => (
@@ -130,9 +165,30 @@ export default function AdminMembershipPlans() {
                         {option.variant || option.duration_label}
                       </TableCell>
                       <TableCell className="text-sm text-text-secondary">{option.duration_label}</TableCell>
-                      <TableCell className="text-sm text-text-secondary">{money(option.base_price)}</TableCell>
+                      <TableCell className="text-sm text-text-secondary">
+                        <div className="flex items-center gap-2">
+                          <span>INR</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            value={getPlanEditValue(option.id, option.base_price)}
+                            onChange={(event) => setPlanEditValue(option.id, event.target.value)}
+                            className="w-32 h-9 px-3 rounded-md bg-bg-secondary border border-border-light text-text-primary"
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm text-text-secondary">{option.tax_percent}%</TableCell>
                       <TableCell className="text-sm text-text-secondary font-semibold">{money(option.total_price)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSavePrice(option.id, option.tax_percent)}
+                          isLoading={savingPlanId === option.id}
+                        >
+                          Save
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -142,7 +198,7 @@ export default function AdminMembershipPlans() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

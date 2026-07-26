@@ -15,6 +15,7 @@ import {
 import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
+import { TrainerRecord as TrainerApiRecord } from '../../types'
 
 type TrainerRecord = {
   id: number
@@ -57,8 +58,17 @@ export default function AdminAttendance() {
         adminService.getClasses(),
       ])
 
-      setTrainers(trainersResponse.data || [])
-      setClasses(classesResponse.data || [])
+      const trainerRows = (trainersResponse.data || []).map((trainer: TrainerApiRecord) => ({
+        id: trainer.id,
+        name: trainer.full_name,
+        specialization: 'General',
+        clients: 0,
+      }))
+
+      const classRows = (classesResponse as { data?: ClassRecord[] }).data || []
+
+      setTrainers(trainerRows)
+      setClasses(classRows)
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
       errorToast('Failed to load attendance data', apiError.message)
@@ -146,7 +156,7 @@ export default function AdminAttendance() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

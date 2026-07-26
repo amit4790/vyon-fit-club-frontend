@@ -12,13 +12,50 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className = '', ...props }, ref) => {
+  ({ label, error, helperText, className = '', onClick, onKeyDown, type, ...props }, ref) => {
+    const isDateInput = type === 'date'
+
+    const openDatePicker = (target: HTMLInputElement) => {
+      if (!isDateInput) {
+        return
+      }
+
+      const inputWithPicker = target as HTMLInputElement & {
+        showPicker?: () => void
+      }
+
+      if (typeof inputWithPicker.showPicker === 'function') {
+        try {
+          inputWithPicker.showPicker()
+        } catch {
+          // Some browsers can block programmatic picker open; fall back to native behavior.
+        }
+      }
+    }
+
     return (
       <div className="flex flex-col gap-2">
         {label && <label className="label text-text-secondary">{label}</label>}
         <input
           ref={ref}
-          className={`input-base ${error && 'border-danger focus:ring-danger'} ${className}`}
+          type={type}
+          className={`input-base ${isDateInput ? 'date-input' : ''} ${error && 'border-danger focus:ring-danger'} ${className}`}
+          onClick={(event) => {
+            onClick?.(event)
+            openDatePicker(event.currentTarget)
+          }}
+          onKeyDown={(event) => {
+            onKeyDown?.(event)
+
+            if (!isDateInput) {
+              return
+            }
+
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              openDatePicker(event.currentTarget)
+            }
+          }}
           {...props}
         />
         {error && <span className="caption text-danger">{error}</span>}

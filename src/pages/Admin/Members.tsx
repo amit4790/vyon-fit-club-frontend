@@ -5,6 +5,7 @@ import { ApiErrorHandler } from '../../api/errors'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input, Select } from '../../components/Input'
+import MembershipInvoiceCard from '../../components/MembershipInvoiceCard'
 import { Modal } from '../../components/Modal'
 import {
   Table,
@@ -18,10 +19,12 @@ import { ToastContainer, useToast } from '../../components/Toast'
 import { adminService } from '../../services/adminService'
 import {
   ExpiringSubscriptionsApiResponse,
+  InvoiceRecord,
   MemberListPagination,
   MemberPayload,
   MemberRecord,
   PlanFamilyRecord,
+  SubscriptionRecord,
 } from '../../types'
 import AdminShell from '../../layouts/AdminShell'
 
@@ -34,14 +37,22 @@ const DEFAULT_MEMBER_FORM = {
   date_of_birth: '',
   gender: '' as '' | 'male' | 'female' | 'other',
   address: '',
-  emergency_contact: '',
-  emergency_phone: '',
-  notes: '',
 }
 
 type MemberFormState = typeof DEFAULT_MEMBER_FORM
 
+type MembershipActionType = 'assign' | 'renew' | 'view'
+
+type MemberMembershipSnapshot = {
+  action: MembershipActionType
+  membershipStatus: 'active' | 'expired' | 'none'
+  currentPlanLabel: string | null
+  expiryDate: string | null
+  subscription: SubscriptionRecord | null
+}
+
 export default function AdminMembers() {
+  const todayIso = new Date().toISOString().slice(0, 10)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [members, setMembers] = useState<MemberRecord[]>([])
@@ -74,6 +85,13 @@ export default function AdminMembers() {
   >([])
   const [expiringDays, setExpiringDays] = useState(7)
   const [expiringTotal, setExpiringTotal] = useState(0)
+  const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
+  const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
+  const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
+  const [viewMembershipMember, setViewMembershipMember] = useState<MemberRecord | null>(null)
+  const [viewMembershipSubscription, setViewMembershipSubscription] = useState<SubscriptionRecord | null>(null)
+  const [viewMembershipInvoice, setViewMembershipInvoice] = useState<InvoiceRecord | null>(null)
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false)
   const [memberForm, setMemberForm] = useState<MemberFormState>(DEFAULT_MEMBER_FORM)
   const [memberFormError, setMemberFormError] = useState<string | null>(null)
   const { toasts, removeToast, success, error: errorToast } = useToast()
@@ -116,6 +134,7 @@ export default function AdminMembers() {
         search,
       })
       setMembers(response.data)
+      await loadMembershipSnapshots(response.data)
       setPagination(response.pagination)
       setMemberPage(response.pagination.page)
     } catch (err: any) {
@@ -126,6 +145,67 @@ export default function AdminMembers() {
         setMembersLoading(false)
       }
     }
+  }
+
+  const loadMembershipSnapshots = async (targetMembers: MemberRecord[]) => {
+    const today = new Date().toISOString().slice(0, 10)
+
+    const snapshots = await Promise.all(
+      targetMembers.map(async (member) => {
+        try {
+          const response = await adminService.getMemberSubscriptions(member.id)
+          const subscriptions = response.data || []
+
+          const activeSubscription = subscriptions.find(
+            (item) => item.status === 'active' && item.end_date >= today
+          )
+          const latestSubscription = subscriptions[0]
+
+          let snapshot: MemberMembershipSnapshot
+
+          if (activeSubscription) {
+            snapshot = {
+              action: 'view',
+              membershipStatus: 'active',
+              currentPlanLabel: activeSubscription.plan_label,
+              expiryDate: activeSubscription.end_date,
+              subscription: activeSubscription,
+            }
+          } else if (latestSubscription) {
+            snapshot = {
+              action: 'renew',
+              membershipStatus: 'expired',
+              currentPlanLabel: latestSubscription.plan_label,
+              expiryDate: latestSubscription.end_date,
+              subscription: latestSubscription,
+            }
+          } else {
+            snapshot = {
+              action: 'assign',
+              membershipStatus: 'none',
+              currentPlanLabel: null,
+              expiryDate: null,
+              subscription: null,
+            }
+          }
+
+          return [member.id, snapshot] as const
+        } catch {
+          return [
+            member.id,
+            {
+              action: 'assign',
+              membershipStatus: 'none',
+              currentPlanLabel: null,
+              expiryDate: null,
+              subscription: null,
+            },
+          ] as const
+        }
+      })
+    )
+
+    setMembershipSnapshotMap(Object.fromEntries(snapshots))
   }
 
   const handleLogout = () => {
@@ -196,6 +276,13 @@ export default function AdminMembers() {
     await loadPlanCatalog()
   }
 
+  const closeViewMembershipModal = () => {
+    setIsViewMembershipModalOpen(false)
+    setViewMembershipMember(null)
+    setViewMembershipSubscription(null)
+    setViewMembershipInvoice(null)
+  }
+
   const closeAssignSubscriptionModal = () => {
     setIsSubscriptionModalOpen(false)
     setSubscriptionMember(null)
@@ -214,9 +301,6 @@ export default function AdminMembers() {
       date_of_birth: member.date_of_birth || '',
       gender: (member.gender as '' | 'male' | 'female' | 'other' | null) || '',
       address: member.address || '',
-      emergency_contact: member.emergency_contact || '',
-      emergency_phone: member.emergency_phone || '',
-      notes: member.notes || '',
     })
     setMemberFormError(null)
     setIsMemberModalOpen(true)
@@ -243,9 +327,6 @@ export default function AdminMembers() {
       date_of_birth: form.date_of_birth || undefined,
       gender: form.gender || undefined,
       address: form.address.trim() || undefined,
-      emergency_contact: form.emergency_contact.trim() || undefined,
-      emergency_phone: form.emergency_phone.trim() || undefined,
-      notes: form.notes.trim() || undefined,
     }
   }
 
@@ -341,6 +422,12 @@ export default function AdminMembers() {
         `Plan assigned to ${subscriptionMember.full_name}${notificationText}`
       )
       closeAssignSubscriptionModal()
+      navigate(`/admin/subscriptions/${response.data.id}/payment`, {
+        state: {
+          subscription: response.data,
+          memberName: subscriptionMember.full_name,
+        },
+      })
       await loadExpiringSubscriptions(expiringDays)
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
@@ -348,6 +435,78 @@ export default function AdminMembers() {
     } finally {
       setIsSubmittingSubscription(false)
     }
+  }
+
+  const openViewMembershipModal = async (member: MemberRecord) => {
+    try {
+      setIsViewMembershipModalOpen(true)
+      setViewMembershipLoading(true)
+      setViewMembershipMember(member)
+      setViewMembershipSubscription(null)
+      setViewMembershipInvoice(null)
+
+      const subscriptionsResponse = await adminService.getMemberSubscriptions(member.id)
+      const subscriptions = subscriptionsResponse.data || []
+
+      if (subscriptions.length === 0) {
+        setViewMembershipLoading(false)
+        return
+      }
+
+      const today = new Date().toISOString().slice(0, 10)
+      const activeSubscription = subscriptions.find(
+        (item) => item.status === 'active' && item.end_date >= today
+      )
+      const selectedSubscription = activeSubscription || subscriptions[0]
+      setViewMembershipSubscription(selectedSubscription)
+
+      const invoiceResponse = await adminService.getInvoices({
+        page: 1,
+        pageSize: 20,
+        memberId: member.id,
+      })
+      const linkedInvoice =
+        invoiceResponse.data.find((invoice) => invoice.subscription_id === selectedSubscription.id) || null
+      setViewMembershipInvoice(linkedInvoice)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Failed to load membership details', apiError.message)
+      closeViewMembershipModal()
+    } finally {
+      setViewMembershipLoading(false)
+    }
+  }
+
+  const downloadInvoice = async (invoiceId: number, invoiceNumber: string | null) => {
+    try {
+      setIsDownloadingInvoice(true)
+      const blob = await adminService.downloadInvoicePdf(invoiceId)
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${invoiceNumber || `invoice-${invoiceId}`}.pdf`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Unable to download invoice', apiError.message)
+    } finally {
+      setIsDownloadingInvoice(false)
+    }
+  }
+
+  const membershipStatusBadge = (status: 'active' | 'expired' | 'none') => {
+    if (status === 'active') {
+      return 'bg-green-100 text-green-700'
+    }
+
+    if (status === 'expired') {
+      return 'bg-amber-100 text-amber-700'
+    }
+
+    return 'bg-gray-100 text-gray-700'
   }
 
   const userInfo = AuthService.getUserInfo()
@@ -360,7 +519,7 @@ export default function AdminMembers() {
       userName={userName}
       onLogout={handleLogout}
     >
-      <Card className="p-5">
+      <Card className="p-5 lg:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Member Management</h2>
@@ -429,10 +588,23 @@ export default function AdminMembers() {
                 <TableHeaderCell>Joining Date</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
                 <TableHeaderCell>Email</TableHeaderCell>
+                <TableHeaderCell>Current Plan</TableHeaderCell>
+                <TableHeaderCell>Membership Status</TableHeaderCell>
+                <TableHeaderCell>Expiry Date</TableHeaderCell>
                 <TableHeaderCell className="text-right">Actions</TableHeaderCell>
               </TableHeader>
               <TableBody>
                 {members.map((member) => (
+                  (() => {
+                    const membership = membershipSnapshotMap[member.id] || {
+                      action: 'assign' as MembershipActionType,
+                      membershipStatus: 'none' as const,
+                      currentPlanLabel: null,
+                      expiryDate: null,
+                      subscription: null,
+                    }
+
+                    return (
                   <TableRow key={member.id}>
                     <TableCell className="text-sm text-text-secondary">{member.full_name}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
@@ -449,14 +621,29 @@ export default function AdminMembers() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.email || '-'}</TableCell>
+                    <TableCell className="text-sm text-text-secondary">{membership.currentPlanLabel || '-'}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${membershipStatusBadge(membership.membershipStatus)}`}
+                      >
+                        {membership.membershipStatus.charAt(0).toUpperCase() + membership.membershipStatus.slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-text-secondary">{membership.expiryDate || '-'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="secondary" onClick={() => openEditMemberModal(member)}>
                           Edit
                         </Button>
-                        <Button size="sm" variant="secondary" onClick={() => openAssignSubscriptionModal(member)}>
-                          Assign Plan
-                        </Button>
+                        {membership.action === 'view' ? (
+                          <Button size="sm" variant="secondary" onClick={() => openViewMembershipModal(member)}>
+                            View Membership
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="secondary" onClick={() => openAssignSubscriptionModal(member)}>
+                            {membership.action === 'renew' ? 'Renew Membership' : 'Assign Plan'}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
@@ -467,6 +654,8 @@ export default function AdminMembers() {
                       </div>
                     </TableCell>
                   </TableRow>
+                    )
+                  })()
                 ))}
               </TableBody>
             </Table>
@@ -529,6 +718,7 @@ export default function AdminMembers() {
             label="Joining Date"
             type="date"
             value={memberForm.joining_date}
+            max={todayIso}
             onChange={(event) => updateMemberFormField('joining_date', event.target.value)}
           />
           <Select
@@ -550,6 +740,8 @@ export default function AdminMembers() {
             label="Date of Birth"
             type="date"
             value={memberForm.date_of_birth}
+            min="1900-01-01"
+            max={todayIso}
             onChange={(event) => updateMemberFormField('date_of_birth', event.target.value)}
           />
           <Select
@@ -564,25 +756,9 @@ export default function AdminMembers() {
             onChange={(event) => updateMemberFormField('gender', event.target.value)}
           />
           <Input
-            label="Emergency Contact"
-            value={memberForm.emergency_contact}
-            onChange={(event) => updateMemberFormField('emergency_contact', event.target.value)}
-          />
-          <Input
-            label="Emergency Phone"
-            value={memberForm.emergency_phone}
-            onChange={(event) => updateMemberFormField('emergency_phone', event.target.value)}
-          />
-          <Input
             label="Address"
             value={memberForm.address}
             onChange={(event) => updateMemberFormField('address', event.target.value)}
-          />
-          <Input
-            label="Notes"
-            className="md:col-span-2"
-            value={memberForm.notes}
-            onChange={(event) => updateMemberFormField('notes', event.target.value)}
           />
         </div>
 
@@ -600,7 +776,7 @@ export default function AdminMembers() {
               Cancel
             </Button>
             <Button onClick={handleAssignSubscription} isLoading={isSubmittingSubscription}>
-              Assign Subscription
+              Assign Subscription and Continue to Payment
             </Button>
           </div>
         }
@@ -613,6 +789,7 @@ export default function AdminMembers() {
               label="Start Date"
               type="date"
               value={subscriptionStartDate}
+              min={todayIso}
               onChange={(event) => setSubscriptionStartDate(event.target.value)}
             />
 
@@ -648,6 +825,60 @@ export default function AdminMembers() {
 
         {subscriptionFormError && (
           <p className="text-red-600 text-sm mt-4">{subscriptionFormError}</p>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={isViewMembershipModalOpen}
+        onClose={closeViewMembershipModal}
+        title={viewMembershipMember ? `Membership - ${viewMembershipMember.full_name}` : 'Membership Details'}
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeViewMembershipModal}>
+              Close
+            </Button>
+          </div>
+        }
+      >
+        {viewMembershipLoading ? (
+          <p className="text-sm text-text-secondary">Loading membership details...</p>
+        ) : !viewMembershipSubscription ? (
+          <p className="text-sm text-text-secondary">No membership found for this member.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <p className="text-text-secondary">Current Membership: <span className="text-text-primary">{viewMembershipSubscription.plan_label}</span></p>
+              <p className="text-text-secondary">Start Date: <span className="text-text-primary">{viewMembershipSubscription.start_date}</span></p>
+              <p className="text-text-secondary">Expiry Date: <span className="text-text-primary">{viewMembershipSubscription.end_date}</span></p>
+              <p className="text-text-secondary">Payment Status: <span className="text-text-primary">{viewMembershipSubscription.payment_status}</span></p>
+            </div>
+
+            {viewMembershipInvoice ? (
+              <MembershipInvoiceCard
+                invoiceNumber={viewMembershipInvoice.invoice_number}
+                memberName={viewMembershipInvoice.member_name}
+                planLabel={viewMembershipInvoice.plan_label}
+                durationLabel={viewMembershipSubscription.duration_label}
+                startDate={viewMembershipSubscription.start_date}
+                expiryDate={viewMembershipSubscription.end_date}
+                originalPrice={viewMembershipInvoice.original_price ?? viewMembershipSubscription.base_price}
+                discountAmount={viewMembershipInvoice.discount_amount ?? 0}
+                taxableAmount={viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price}
+                gstAmount={viewMembershipInvoice.gst_amount ?? viewMembershipSubscription.tax_amount}
+                totalPaid={viewMembershipInvoice.total_paid ?? viewMembershipSubscription.total_amount}
+                paymentMode={(viewMembershipInvoice.payment_mode || 'N/A').replace('_', ' ').toUpperCase()}
+                transactionReference={viewMembershipInvoice.transaction_reference}
+                paymentDate={viewMembershipInvoice.payment_date || '-'}
+                notes={viewMembershipInvoice.notes}
+                showDownload={Boolean(viewMembershipInvoice.invoice_download_url)}
+                onDownloadInvoice={() => downloadInvoice(viewMembershipInvoice.id, viewMembershipInvoice.invoice_number)}
+                downloading={isDownloadingInvoice}
+              />
+            ) : (
+              <p className="text-sm text-text-secondary">Payment details are not recorded yet.</p>
+            )}
+          </div>
         )}
       </Modal>
 

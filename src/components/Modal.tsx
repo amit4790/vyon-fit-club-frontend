@@ -32,10 +32,10 @@ export const Modal: React.FC<ModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 animate-fade-in">
-      <div className="min-h-full flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black bg-opacity-50 animate-fade-in">
+      <div className="min-h-full flex items-start justify-center p-4 sm:py-8">
         <div className={`${sizes[size]} w-full animate-slide-up`}>
-          <div className="bg-bg-card border border-border-light rounded-lg shadow-elevated flex max-h-[90vh] flex-col">
+          <div className="bg-bg-card border border-border-light rounded-lg shadow-elevated flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border-light p-6">
             <h2 className="card-title">{title}</h2>
@@ -48,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto">{children}</div>
+          <div className="p-6 overflow-visible">{children}</div>
 
           {/* Footer */}
           {footer && <div className="border-t border-border-light p-6">{footer}</div>}

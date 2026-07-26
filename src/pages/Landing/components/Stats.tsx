@@ -67,10 +67,10 @@ const Stat: React.FC<StatProps> = ({ icon, value, suffix, label }) => {
 
 export const Stats: React.FC = () => {
   return (
-    <section id="stats" className="py-20 bg-bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="stats" className="landing-section bg-bg-secondary">
+      <div className="landing-container">
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           <Stat
             icon={<Users size={40} />}
             value={500}

@@ -2,12 +2,12 @@
  * Trainer API service
  */
 
-import { get } from '../api/api'
+import { httpClient } from '../api/api'
 
 export const trainerService = {
-  getDashboard: () => get('/api/trainer/dashboard'),
+  getDashboard: () => httpClient.get('/api/trainer/dashboard'),
 
-  getClients: () => get('/api/trainer/clients'),
+  getClients: () => httpClient.get('/api/trainer/clients'),
 
-  getSchedule: () => get('/api/trainer/schedule'),
+  getSchedule: () => httpClient.get('/api/trainer/schedule'),
 }

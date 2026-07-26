@@ -13,9 +13,11 @@ import Admin from '../pages/Admin'
 import AdminAttendance from '../pages/Admin/Attendance'
 import AdminMembers from '../pages/Admin/Members'
 import AdminMembershipPlans from '../pages/Admin/MembershipPlans'
+import MembershipPayment from '../pages/Admin/MembershipPayment'
 import AdminPayments from '../pages/Admin/Payments'
 import AdminReports from '../pages/Admin/Reports'
 import AdminSettings from '../pages/Admin/Settings'
+import AdminTrainers from '../pages/Admin/Trainers'
 import Trainer from '../pages/Trainer'
 import Member from '../pages/Member'
 
@@ -58,6 +60,14 @@ const router = createBrowserRouter([
       {
         path: '/admin/membership-plans',
         element: <AdminMembershipPlans />,
+      },
+      {
+        path: '/admin/subscriptions/:subscriptionId/payment',
+        element: <MembershipPayment />,
+      },
+      {
+        path: '/admin/trainers',
+        element: <AdminTrainers />,
       },
       {
         path: '/admin/payments',

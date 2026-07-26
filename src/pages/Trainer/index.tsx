@@ -85,7 +85,7 @@ export default function Trainer() {
     <div className="min-h-screen bg-gray-50">
       {/* Premium Header with Logo and Branding */}
       <header className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-24">
             {/* Left Side - Logo and Branding */}
             <button
@@ -129,7 +129,7 @@ export default function Trainer() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Welcome Section - Compact */}
         <div className="pt-8 pb-8 mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">

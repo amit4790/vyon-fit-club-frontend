@@ -28,6 +28,9 @@ export interface MemberRecord {
   emergency_contact?: string | null
   emergency_phone?: string | null
   notes?: string | null
+  current_plan_label?: string | null
+  membership_status?: 'active' | 'expired' | 'none'
+  membership_expiry_date?: string | null
 }
 
 export interface MemberPayload {
@@ -91,13 +94,48 @@ export interface PlanCatalogApiResponse {
   data: PlanFamilyRecord[]
 }
 
+export interface PlanOptionOperationApiResponse {
+  message: string
+  data: PlanOptionRecord
+}
+
+export interface TrainerRecord {
+  id: number
+  full_name: string
+  email: string
+  role: string
+  is_active: boolean
+}
+
+export interface TrainerPayload {
+  full_name: string
+  email: string
+  is_active?: boolean
+}
+
+export interface TrainerListApiResponse {
+  message: string
+  data: TrainerRecord[]
+}
+
+export interface TrainerOperationApiResponse {
+  message: string
+  data: TrainerRecord
+}
+
+export interface TrainerDeleteApiResponse {
+  message: string
+}
+
 export interface SubscriptionRecord {
   id: number
   member_id: number
+  member_name?: string | null
   plan_id: number
   plan_family: string
   plan_variant: string | null
   plan_label: string
+  duration_label: string
   start_date: string
   end_date: string
   status: string
@@ -105,7 +143,10 @@ export interface SubscriptionRecord {
   tax_percent: number
   tax_amount: number
   total_amount: number
+  payment_status: string
 }
+
+export type PaymentMode = 'cash' | 'upi' | 'card' | 'bank_transfer'
 
 export interface SubscriptionOperationApiResponse {
   message: string
@@ -142,6 +183,7 @@ export interface DeliveryResultRecord {
 
 export interface InvoiceRecord {
   id: number
+  invoice_number: string | null
   member_id: number
   member_name: string
   member_email: string | null
@@ -149,6 +191,17 @@ export interface InvoiceRecord {
   subscription_id: number
   plan_label: string
   amount: number
+  original_price: number | null
+  final_amount_received: number | null
+  discount_amount: number | null
+  discount_percentage: number | null
+  gst_amount: number | null
+  total_paid: number | null
+  payment_mode: string | null
+  transaction_reference: string | null
+  payment_date: string | null
+  notes: string | null
+  invoice_download_url: string | null
   status: InvoiceStatus
   issued_at: string
   paid_at: string | null
@@ -169,6 +222,19 @@ export interface InvoiceOperationApiResponse {
   message: string
   data: InvoiceRecord
   notifications: DeliveryResultRecord[]
+}
+
+export interface CapturePaymentPayload {
+  final_amount_received: number
+  payment_mode: PaymentMode
+  transaction_reference?: string | null
+  payment_date: string
+  notes?: string | null
+}
+
+export interface CapturePaymentApiResponse {
+  message: string
+  data: InvoiceRecord
 }
 
 export interface Trainer extends User {

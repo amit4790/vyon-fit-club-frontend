@@ -2,14 +2,14 @@
  * Member API service
  */
 
-import { get } from '../api/api'
+import { httpClient } from '../api/api'
 
 export const memberService = {
-  getDashboard: () => get('/api/member/dashboard'),
+  getDashboard: () => httpClient.get('/api/member/dashboard'),
 
-  getProfile: () => get('/api/member/profile'),
+  getProfile: () => httpClient.get('/api/member/profile'),
 
-  getClasses: () => get('/api/member/classes'),
+  getClasses: () => httpClient.get('/api/member/classes'),
 
-  getBookings: () => get('/api/member/bookings'),
+  getBookings: () => httpClient.get('/api/member/bookings'),
 }

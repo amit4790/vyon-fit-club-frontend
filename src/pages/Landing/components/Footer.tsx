@@ -1,6 +1,6 @@
 ﻿/**
  * Landing Page Footer
- * Footer with company info and links
+ * Streamlined footer with Programs replace for Operating Hours
  */
 
 import React from 'react'
@@ -20,49 +20,62 @@ export const LandingFooter: React.FC = () => {
   }
 
   const quickLinks = [
-    { label: 'About', href: '#about' },
+    { label: 'About Us', href: '#about' },
     { label: 'Memberships', href: '#memberships' },
     { label: 'Trainers', href: '#trainers' },
     { label: 'Blog', href: '#' },
-    { label: 'Privacy', href: '#' },
-    { label: 'Terms', href: '#' },
+    { label: 'FAQ', href: '#faq' },
+  ]
+
+  const programs = [
+    { label: 'HIIT Training', href: '#group-training' },
+    { label: 'Group Strength', href: '#group-training' },
+    { label: 'Functional Circuits', href: '#group-training' },
+    { label: 'Personal Training', href: '#trainers' },
   ]
 
   const socials = [
-    { icon: <Facebook size={20} />, label: 'Facebook' },
-    { icon: <Instagram size={20} />, label: 'Instagram' },
-    { icon: <Twitter size={20} />, label: 'Twitter' },
-    { icon: <Linkedin size={20} />, label: 'LinkedIn' },
+    { icon: <Facebook size={16} />, label: 'Facebook' },
+    { icon: <Instagram size={16} />, label: 'Instagram' },
+    { icon: <Twitter size={16} />, label: 'Twitter' },
+    { icon: <Linkedin size={16} />, label: 'LinkedIn' },
   ]
 
   return (
-    <footer className="bg-bg-secondary border-t border-border-light">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
+    <footer className="bg-[#161618] border-t border-neutral-800/80 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+          
+          {/* Brand Column */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-2">
               <img
                 src="/src/assets/images/logo/vyon-logo.jpg"
                 alt="VYON"
-                className="h-8 w-8"
+                className="h-6 w-6 rounded-md object-cover"
               />
-              <span className="font-bold text-text-primary">VYON FIT CLUB</span>
+              <span className="font-bold text-sm tracking-wider text-neutral-100">
+                VYON FIT CLUB
+              </span>
             </div>
-            <p className="body text-text-secondary text-sm">
-              Premium fitness club for achieving your transformation goals.
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Premium fitness club dedicated to helping you achieve your ultimate transformation goals.
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Links Column */}
           <div>
-            <h4 className="font-semibold text-text-primary mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-200 mb-2.5">
+              Quick Links
+            </h4>
+            <ul className="space-y-1.5">
               {quickLinks.map((link) => (
                 <li key={link.label}>
                   <button
                     onClick={() => handleNavClick(link.href)}
-                    className="body text-text-secondary hover:text-primary transition-colors text-sm bg-none border-none cursor-pointer"
+                    className="text-xs text-neutral-400 hover:text-[#8B1E3F] transition-colors bg-none border-none cursor-pointer p-0"
                   >
                     {link.label}
                   </button>
@@ -71,64 +84,78 @@ export const LandingFooter: React.FC = () => {
             </ul>
           </div>
 
-          {/* Hours */}
+          {/* Programs Column (Replaces Operating Hours) */}
           <div>
-            <h4 className="font-semibold text-text-primary mb-4">Operating Hours</h4>
-            <ul className="space-y-2 text-sm">
-              <li className="body text-text-secondary">Mon-Fri: 6 AM - 10 PM</li>
-              <li className="body text-text-secondary">Sat: 7 AM - 9 PM</li>
-              <li className="body text-text-secondary">Sun: 7 AM - 8 PM</li>
-              <li className="body text-text-secondary text-primary font-semibold mt-2">
-                24/7 for Ultimate Members
-              </li>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-200 mb-2.5">
+              Programs
+            </h4>
+            <ul className="space-y-1.5">
+              {programs.map((program) => (
+                <li key={program.label}>
+                  <button
+                    onClick={() => handleNavClick(program.href)}
+                    className="text-xs text-neutral-400 hover:text-[#8B1E3F] transition-colors bg-none border-none cursor-pointer p-0"
+                  >
+                    {program.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Social */}
+          {/* Social Links Column */}
           <div>
-            <h4 className="font-semibold text-text-primary mb-4">Follow Us</h4>
-            <div className="flex gap-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-200 mb-2.5">
+              Follow Us
+            </h4>
+            <p className="text-xs text-neutral-400 mb-3">
+              Stay connected with our fitness community.
+            </p>
+            <div className="flex gap-2">
               {socials.map((social, i) => (
                 <button
                   key={i}
-                  className="p-2 bg-bg-card hover:bg-primary hover:text-text-secondary rounded-lg transition-all duration-300"
+                  className="p-2 bg-[#1F1F22] border border-neutral-800 hover:border-[#8B1E3F] hover:bg-[#8B1E3F] hover:text-white rounded-lg text-neutral-300 transition-all duration-300"
                   title={social.label}
+                  aria-label={social.label}
                 >
                   {social.icon}
                 </button>
               ))}
             </div>
           </div>
+
         </div>
 
-        {/* Bottom */}
-        <div className="border-t border-border-light pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="caption text-text-secondary">
-            &copy; 2026 VYON FIT CLUB. All rights reserved.
+        {/* Bottom Bar */}
+        <div className="border-t border-neutral-800/80 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
+          <p>
+            &copy; {new Date().getFullYear()} VYON FIT CLUB. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
+          
+          <div className="flex items-center gap-4">
             <button
               onClick={() => handleNavClick('#')}
-              className="caption text-text-secondary hover:text-primary transition-colors bg-none border-none cursor-pointer"
+              className="hover:text-neutral-300 transition-colors bg-none border-none cursor-pointer p-0"
             >
               Privacy Policy
             </button>
             <button
               onClick={() => handleNavClick('#')}
-              className="caption text-text-secondary hover:text-primary transition-colors bg-none border-none cursor-pointer"
+              className="hover:text-neutral-300 transition-colors bg-none border-none cursor-pointer p-0"
             >
               Terms of Service
             </button>
             <button
               onClick={() => handleNavClick('#contact')}
-              className="caption text-text-secondary hover:text-primary transition-colors bg-none border-none cursor-pointer"
+              className="hover:text-neutral-300 transition-colors bg-none border-none cursor-pointer p-0"
             >
               Contact
             </button>
           </div>
         </div>
+
       </div>
     </footer>
   )
 }
-

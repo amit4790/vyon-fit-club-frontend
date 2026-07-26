@@ -112,7 +112,7 @@ export default function AdminSettings() {
         </Card>
       </div>
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

@@ -1,6 +1,6 @@
 /**
  * FAQ Section
- * Accordion with frequently asked questions
+ * Compact accordion with frequently asked questions
  */
 
 import React, { useState } from 'react'
@@ -15,23 +15,25 @@ interface FAQItemProps {
 
 const FAQItem: React.FC<FAQItemProps> = ({ question, answer, isOpen, onClick }) => {
   return (
-    <div className="border-b border-border-light">
+    <div className="bg-[#161618] border border-neutral-800/80 rounded-lg overflow-hidden transition-all duration-300">
       <button
         onClick={onClick}
-        className="w-full py-6 flex items-center justify-between hover:text-primary transition-colors"
+        className="w-full py-4 px-5 flex items-center justify-between text-left hover:text-[#8B1E3F] transition-colors gap-3"
       >
-        <span className="card-title text-left">{question}</span>
+        <span className="font-semibold text-sm sm:text-base text-neutral-100">
+          {question}
+        </span>
         <ChevronDown
-          size={24}
-          className={`flex-shrink-0 transition-transform duration-300 ${
-            isOpen ? 'rotate-180' : ''
+          size={18}
+          className={`flex-shrink-0 text-neutral-400 transition-transform duration-300 ${
+            isOpen ? 'rotate-180 text-[#8B1E3F]' : ''
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="pb-6 animate-slide-up">
-          <p className="body text-text-secondary">{answer}</p>
+        <div className="px-5 pb-4 pt-1 caption text-neutral-400 leading-relaxed border-t border-neutral-800/50 mt-1">
+          {answer}
         </div>
       )}
     </div>
@@ -75,18 +77,21 @@ export const FAQ: React.FC = () => {
   ]
 
   return (
-    <section className="py-20 bg-bg-secondary">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Title */}
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">FREQUENTLY ASKED QUESTIONS</h2>
-          <p className="body text-text-secondary">
+    <section id="faq" className="landing-section bg-[#161618] text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Title Header */}
+        <div className="landing-header">
+          <h2 className="section-title tracking-wider uppercase mb-3">
+            FREQUENTLY ASKED QUESTIONS
+          </h2>
+          <p className="landing-subtitle text-neutral-400">
             Find answers to common questions about VYON FIT CLUB
           </p>
         </div>
 
-        {/* FAQs */}
-        <div className="space-y-0">
+        {/* FAQs Accordion */}
+        <div className="space-y-3">
           {faqs.map((faq, i) => (
             <FAQItem
               key={i}
@@ -97,6 +102,7 @@ export const FAQ: React.FC = () => {
             />
           ))}
         </div>
+
       </div>
     </section>
   )

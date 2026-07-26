@@ -101,7 +101,7 @@ export default function Login() {
     <div className="min-h-screen bg-bg-primary flex flex-col">
       {/* Header with Logo */}
       <header className="border-b border-border-light">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
@@ -119,8 +119,8 @@ export default function Login() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-16 px-4">
-        <div className="w-full max-w-md">
+      <main className="flex-1 flex items-center justify-center py-12 px-6">
+        <div className="w-full max-w-lg">
           {/* Toast Notification */}
           {toast.show && (
             <div
@@ -189,6 +189,7 @@ export default function Login() {
               {/* Submit Button */}
               <Button
                 type="submit"
+                size="md"
                 disabled={isLoading}
                 className="w-full mt-6"
               >

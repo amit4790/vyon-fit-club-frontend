@@ -1,6 +1,6 @@
 ﻿import { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BadgePlus, BarChart3, CalendarCheck2, CreditCard, FileBarChart2, LogOut, Settings, Users, WalletCards } from 'lucide-react'
+import { BadgePlus, BarChart3, CalendarCheck2, CreditCard, FileBarChart2, LogOut, Settings, UserCog, Users, WalletCards } from 'lucide-react'
 
 interface AdminShellProps {
   title: string
@@ -27,6 +27,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Members',
     path: '/admin/members',
     icon: <Users size={18} />,
+  },
+  {
+    label: 'Trainers',
+    path: '/admin/trainers',
+    icon: <UserCog size={18} />,
   },
   {
     label: 'Membership Plans',

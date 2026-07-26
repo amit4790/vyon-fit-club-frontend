@@ -1,10 +1,10 @@
 /**
- * Why Choose VYON Section
- * Six premium feature cards
+ * Why Choose Section
+ * Core value points for VYON Fit Club.
  */
 
 import React from 'react'
-import { Dumbbell, Zap, Heart, UserCheck, Apple, Sliders } from 'lucide-react'
+import { Award, Dumbbell, ShieldCheck, Users } from 'lucide-react'
 
 interface FeatureCardProps {
   icon: React.ReactNode
@@ -14,12 +14,12 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
   return (
-    <div className="group card hover cursor-pointer">
-      <div className="text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+    <div className="card h-full p-6 hover:shadow-card-hover transition-all duration-300">
+      <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center mb-4">
         {icon}
       </div>
-      <h3 className="card-title mb-3">{title}</h3>
-      <p className="body text-text-secondary">{description}</p>
+      <h3 className="card-title mb-2 text-lg">{title}</h3>
+      <p className="body text-text-secondary text-sm leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -27,58 +27,49 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
 export const WhyChoose: React.FC = () => {
   const features = [
     {
-      icon: <Dumbbell size={32} />,
-      title: 'Strength Training',
+      icon: <Award size={20} />,
+      title: 'Certified Coaches',
       description:
-        'Build muscle and power with our comprehensive strength training programs and premium equipment.',
+        'Train under experienced professionals who build plans around your goals, body type, and progress pace.',
     },
     {
-      icon: <Zap size={32} />,
-      title: 'Functional Fitness',
+      icon: <Dumbbell size={20} />,
+      title: 'Premium Equipment',
       description:
-        'Improve everyday movement patterns and functional capacity with specialized training methods.',
+        'Access modern strength and cardio zones designed for both beginners and advanced athletes.',
     },
     {
-      icon: <Heart size={32} />,
-      title: 'Cardio Programs',
+      icon: <Users size={20} />,
+      title: 'Supportive Community',
       description:
-        'Enhance cardiovascular health with diverse cardio zones and professional guidance.',
+        'Stay consistent with a motivating environment, group classes, and accountability from the VYON team.',
     },
     {
-      icon: <UserCheck size={32} />,
-      title: 'Personal Coaching',
+      icon: <ShieldCheck size={20} />,
+      title: 'Clean & Safe Facility',
       description:
-        'Work with certified trainers who create personalized fitness plans tailored to your goals.',
-    },
-    {
-      icon: <Apple size={32} />,
-      title: 'Nutrition Guidance',
-      description:
-        'Receive expert nutritional advice to complement your fitness journey and maximize results.',
-    },
-    {
-      icon: <Sliders size={32} />,
-      title: 'Flexible Memberships',
-      description:
-        'Choose from flexible membership options that fit your lifestyle and fitness goals.',
+        'Train confidently in a hygienic, secure, and professionally maintained space every day.',
     },
   ]
 
   return (
-    <section className="py-20 bg-bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Title */}
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">WHY CHOOSE VYON</h2>
-          <p className="body text-text-secondary max-w-2xl mx-auto">
-            Experience a complete fitness ecosystem designed for your transformation
+    <section id="why-choose" className="landing-section bg-bg-secondary">
+      <div className="landing-container">
+        <div className="landing-header">
+          <h2 className="section-title mb-3 tracking-wider">WHY CHOOSE VYON</h2>
+          <p className="landing-subtitle">
+            Everything you need in one place to build strength, confidence, and long-term fitness habits.
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, i) => (
-            <FeatureCard key={i} {...feature} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature) => (
+            <FeatureCard
+              key={feature.title}
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+            />
           ))}
         </div>
       </div>

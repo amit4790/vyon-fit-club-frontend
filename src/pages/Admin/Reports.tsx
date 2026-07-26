@@ -153,7 +153,7 @@ export default function AdminReports() {
         </div>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

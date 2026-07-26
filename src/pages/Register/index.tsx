@@ -38,8 +38,8 @@ export default function Register() {
       <LandingNavbar />
 
       {/* Main Content */}
-      <main className="pt-32 pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="pt-24 pb-12">
+        <div className="max-w-6xl mx-auto px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/memberships')}
@@ -50,7 +50,7 @@ export default function Register() {
           </button>
 
           {/* Page Header */}
-          <div className="mb-12">
+          <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">
               Create Your Account
             </h1>
@@ -59,11 +59,11 @@ export default function Register() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Registration Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:max-w-2xl">
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border border-border-light">
-                <form className="space-y-6">
+                <form className="space-y-5">
                   {/* Name Field */}
                   <div>
                     <label className="block text-text-primary font-medium mb-2">
@@ -72,7 +72,7 @@ export default function Register() {
                     <input
                       type="text"
                       placeholder="Enter your full name"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -84,7 +84,7 @@ export default function Register() {
                     <input
                       type="email"
                       placeholder="your.email@example.com"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -96,7 +96,7 @@ export default function Register() {
                     <input
                       type="tel"
                       placeholder="+91 98765 43210"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -108,7 +108,7 @@ export default function Register() {
                     <input
                       type="password"
                       placeholder="Create a strong password"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -120,7 +120,7 @@ export default function Register() {
                     <input
                       type="password"
                       placeholder="Confirm your password"
-                      className="w-full px-4 py-3 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      className="w-full h-11 px-4 bg-gray-700 border border-border-light rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                     />
                   </div>
 
@@ -139,7 +139,7 @@ export default function Register() {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
+                    className="w-full h-11 px-4 bg-gradient-to-r from-primary to-accent text-text-secondary font-semibold rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
                   >
                     Create Account
                   </button>
@@ -149,7 +149,7 @@ export default function Register() {
 
             {/* Selected Plan Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border-2 border-primary h-fit sticky top-32">
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 border-2 border-primary h-fit sticky top-24">
                 <h3 className="text-xl font-bold text-text-primary mb-6">
                   Order Summary
                 </h3>

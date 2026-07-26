@@ -14,6 +14,7 @@ export const LandingNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const isAuthenticated = AuthService.isAuthenticated()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,14 +49,20 @@ export const LandingNavbar: React.FC = () => {
 
   const handleAccountClick = () => {
     setIsMobileMenuOpen(false)
-    if (AuthService.isAuthenticated()) {
+    if (isAuthenticated) {
       navigate(getAuthenticatedHomePath())
       return
     }
     navigate('/login')
   }
 
-  const accountLabel = AuthService.isAuthenticated() ? 'My Page' : 'Login'
+  const handleLogoutClick = () => {
+    setIsMobileMenuOpen(false)
+    AuthService.logout()
+    navigate('/')
+  }
+
+  const accountLabel = isAuthenticated ? 'My Dashboard' : 'Login'
 
   const menuItems = [
     { label: 'Home', href: '#home' },
@@ -74,7 +81,7 @@ export const LandingNavbar: React.FC = () => {
           : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Refined navbar height and padding */}
         <div className="flex items-center justify-between h-20">
           {/* Premium Logo - increased by 10% with refined spacing */}
@@ -106,16 +113,29 @@ export const LandingNavbar: React.FC = () => {
           <div className="hidden md:flex items-center gap-4 flex-shrink-0">
             <button
               onClick={handleAccountClick}
-              className="px-6 py-2 border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
+              className={`px-6 py-2 rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide ${
+                isAuthenticated
+                  ? 'bg-primary hover:bg-accent text-text-secondary shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                  : 'border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary'
+              }`}
             >
               {accountLabel}
             </button>
-            <button
-              onClick={() => navigate('/register')}
-              className="px-6 py-2 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              Join Now
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={handleLogoutClick}
+                className="px-6 py-2 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/register')}
+                className="px-6 py-2 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                Join Now
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -143,19 +163,32 @@ export const LandingNavbar: React.FC = () => {
               <div className="flex gap-3 pt-6 border-t border-border-light">
                 <button
                   onClick={handleAccountClick}
-                  className="flex-1 px-4 py-3 border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide text-center"
+                  className={`flex-1 px-4 py-3 rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide text-center ${
+                    isAuthenticated
+                      ? 'bg-primary hover:bg-accent text-text-secondary'
+                      : 'border-2 border-text-secondary text-text-secondary hover:border-primary hover:text-primary'
+                  }`}
                 >
                   {accountLabel}
                 </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false)
-                    navigate('/register')
-                  }}
-                  className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
-                >
-                  Join Now
-                </button>
+                {isAuthenticated ? (
+                  <button
+                    onClick={handleLogoutClick}
+                    className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      navigate('/register')
+                    }}
+                    className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
+                  >
+                    Join Now
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -107,7 +107,7 @@ body {
      ============================================================ */
 
   .input-base {
-    @apply w-full bg-bg-secondary border border-border-light rounded-lg px-4 py-2.5;
+    @apply w-full h-10 bg-bg-secondary border border-border-light rounded-lg px-4;
     @apply text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
     @apply transition-all duration-200;
   }
@@ -126,6 +126,33 @@ body {
 
   .select {
     @apply input-base cursor-pointer;
+  }
+
+  .date-input {
+    @apply pr-11 cursor-pointer;
+    color-scheme: dark;
+  }
+
+  .date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.72);
+    opacity: 0.82;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    background-color: transparent;
+  }
+
+  .date-input::-webkit-calendar-picker-indicator:hover {
+    background-color: rgba(184, 184, 184, 0.08);
+  }
+
+  .date-input::-webkit-datetime-edit,
+  .date-input::-webkit-datetime-edit-fields-wrapper,
+  .date-input::-webkit-datetime-edit-text,
+  .date-input::-webkit-datetime-edit-month-field,
+  .date-input::-webkit-datetime-edit-day-field,
+  .date-input::-webkit-datetime-edit-year-field {
+    color: #c3c3c3;
   }
 
   /* ============================================================
@@ -202,6 +229,26 @@ body {
 
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  /* ============================================================
+     LANDING PAGE LAYOUT
+     ============================================================ */
+
+  .landing-section {
+    @apply py-16 sm:py-20 border-t border-border-light;
+  }
+
+  .landing-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .landing-header {
+    @apply text-center mb-12 sm:mb-14;
+  }
+
+  .landing-subtitle {
+    @apply body text-text-secondary max-w-2xl mx-auto;
   }
 }
 

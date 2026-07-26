@@ -271,7 +271,7 @@ export default function AdminPayments() {
         )}
       </Card>
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </AdminShell>
   )
 }

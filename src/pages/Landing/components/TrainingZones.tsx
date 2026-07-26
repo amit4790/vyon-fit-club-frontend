@@ -4,7 +4,6 @@
  */
 
 import React from 'react'
-import { Zap } from 'lucide-react'
 
 interface ZoneCardProps {
   title: string
@@ -14,7 +13,7 @@ interface ZoneCardProps {
 
 const ZoneCard: React.FC<ZoneCardProps> = ({ title, description, image }) => {
   return (
-    <div className="group relative h-80 rounded-lg overflow-hidden cursor-pointer">
+    <div className="group relative h-80 lg:h-96 rounded-lg overflow-hidden cursor-pointer">
       {/* Image */}
       <img
         src={image}
@@ -56,12 +55,12 @@ export const TrainingZones: React.FC = () => {
   ]
 
   return (
-    <section id="gallery" className="py-20 bg-bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="gallery" className="landing-section bg-bg-secondary">
+      <div className="landing-container">
         {/* Title */}
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">TRAINING ZONES</h2>
-          <p className="body text-text-secondary max-w-2xl mx-auto">
+        <div className="landing-header">
+          <h2 className="section-title mb-3 tracking-wider">TRAINING ZONES</h2>
+          <p className="landing-subtitle">
             Explore our premium training facilities
           </p>
         </div>
