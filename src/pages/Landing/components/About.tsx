@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { Check } from 'lucide-react'
+import facilityOverviewImage from '../../../assets/images/gym/facility-overview.png'
 
 export const About: React.FC = () => {
   const features = [
@@ -36,7 +37,7 @@ export const About: React.FC = () => {
           {/* Image Column */}
           <div className="relative h-80 lg:h-[28rem] rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
             <img
-              src="/src/assets/images/gym/facility-overview.png"
+              src={facilityOverviewImage}
               alt="Facility Overview"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             />

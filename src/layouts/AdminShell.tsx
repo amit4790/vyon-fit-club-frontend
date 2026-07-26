@@ -4,6 +4,7 @@ import { BarChart3, CalendarCheck2, ChevronDown, CreditCard, FileBarChart2, LogO
 import { USER_ROLES } from '../auth/roles'
 import { AuthService } from '../services/auth'
 import { toTitleCase } from '../utils/format'
+import vyonLogo from '../assets/images/logo/vyon-logo.jpg'
 
 interface AdminShellProps {
   title: string
@@ -73,7 +74,7 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
           onClick={() => navigate('/')}
           className="h-20 px-5 flex items-center gap-3 border-b border-border-light hover:bg-white/5 transition-colors"
         >
-          <img src="/src/assets/images/logo/vyon-logo.jpg" alt="VYON FIT CLUB" className="h-12 w-12 object-contain rounded" />
+          <img src={vyonLogo} alt="VYON FIT CLUB" className="h-12 w-12 object-contain rounded" />
           <div className="text-left">
             <p className="font-bold text-lg leading-tight tracking-tight">VYON</p>
             <p className="text-text-secondary text-xs">Premium Fitness Club</p>

@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { Check } from 'lucide-react'
+import personalTrainingImage from '../../../assets/images/gym/personal-training.png'
 
 export const PersonalTraining: React.FC = () => {
   const benefits = [
@@ -53,7 +54,7 @@ export const PersonalTraining: React.FC = () => {
           {/* Image Column */}
           <div className="relative h-80 lg:h-[28rem] rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
             <img
-              src="/src/assets/images/gym/personal-training.png"
+              src={personalTrainingImage}
               alt="Personal Training"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             />

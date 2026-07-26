@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import ctaBannerImage from '../../../assets/images/gym/cta-banner.png'
 
 export const CTABanner: React.FC = () => {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ export const CTABanner: React.FC = () => {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(/src/assets/images/gym/cta-banner.png)',
+          backgroundImage: `url(${ctaBannerImage})`,
         }}
       />
 

@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Star } from 'lucide-react'
 import { AuthService } from '../../../api/api'
+import heroInteriorImage from '../../../assets/images/gym/hero-interior.png'
 
 export const Hero: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -30,7 +31,7 @@ export const Hero: React.FC = () => {
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
-          backgroundImage: 'url(/src/assets/images/gym/hero-interior.png)',
+          backgroundImage: `url(${heroInteriorImage})`,
           backgroundPosition: 'center',
         }}
       />
