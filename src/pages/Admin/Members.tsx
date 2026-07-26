@@ -896,6 +896,7 @@ export default function AdminMembers() {
               <MembershipInvoiceCard
                 invoiceNumber={viewMembershipInvoice.invoice_number}
                 memberName={viewMembershipInvoice.member_name}
+                memberId={String(viewMembershipInvoice.member_id)}
                 planLabel={viewMembershipInvoice.plan_label}
                 durationLabel={viewMembershipSubscription.duration_label}
                 startDate={viewMembershipSubscription.start_date}
@@ -909,6 +910,9 @@ export default function AdminMembers() {
                 transactionReference={viewMembershipInvoice.transaction_reference}
                 paymentDate={viewMembershipInvoice.payment_date || '-'}
                 notes={viewMembershipInvoice.notes}
+                status={viewMembershipInvoice.status}
+                createdBy={userName}
+                counsellor={userName}
                 showDownload={Boolean(viewMembershipInvoice.invoice_download_url)}
                 onDownloadInvoice={() => downloadInvoice(viewMembershipInvoice.id, viewMembershipInvoice.invoice_number)}
                 downloading={isDownloadingInvoice}

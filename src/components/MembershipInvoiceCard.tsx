@@ -1,8 +1,11 @@
-import { Button } from './Button'
+import { DEFAULT_GYM_PROFILE } from './invoice/constants'
+import { MembershipInvoice } from './invoice/MembershipInvoice'
+import { MembershipInvoiceData } from './invoice/types'
 
 interface MembershipInvoiceCardProps {
   invoiceNumber?: string | null
   memberName: string
+  memberId?: string | null
   planLabel: string
   durationLabel: string
   startDate: string
@@ -16,21 +19,61 @@ interface MembershipInvoiceCardProps {
   transactionReference?: string | null
   paymentDate: string
   notes?: string | null
+  status?: string | null
+  createdBy?: string | null
+  counsellor?: string | null
   onDownloadInvoice?: () => void
   downloading?: boolean
   showDownload?: boolean
 }
 
-function money(value: number): string {
-  return `INR ${value.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
+function mapPaymentStatus(status?: string | null, balance = 0): MembershipInvoiceData['paymentStatus'] {
+  const normalized = status?.trim().toLowerCase()
+
+  if (!normalized) {
+    return 'PENDING'
+  }
+
+  if (normalized === 'paid' && balance > 0) {
+    return 'PARTIAL'
+  }
+
+  if (normalized === 'paid') {
+    return 'PAID'
+  }
+
+  if (normalized === 'pending') {
+    return 'PENDING'
+  }
+
+  if (normalized === 'cancelled') {
+    return 'CANCELLED'
+  }
+
+  return normalized === 'failed' ? 'FAILED' : 'PENDING'
+}
+
+function mapInvoiceDateParts(value: string): { invoiceDate: string; invoiceTime: string } {
+  const normalized = value.trim()
+  if (!normalized || normalized === '-') {
+    return { invoiceDate: '-', invoiceTime: '-' }
+  }
+
+  const parsed = new Date(normalized)
+  if (Number.isNaN(parsed.getTime())) {
+    return { invoiceDate: normalized, invoiceTime: '-' }
+  }
+
+  return {
+    invoiceDate: parsed.toLocaleDateString('en-GB'),
+    invoiceTime: parsed.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+  }
 }
 
 export default function MembershipInvoiceCard({
   invoiceNumber,
   memberName,
+  memberId,
   planLabel,
   durationLabel,
   startDate,
@@ -44,52 +87,63 @@ export default function MembershipInvoiceCard({
   transactionReference,
   paymentDate,
   notes,
+  status,
+  createdBy,
+  counsellor,
   onDownloadInvoice,
   downloading = false,
   showDownload = true,
 }: MembershipInvoiceCardProps) {
+  const safeDiscount = Number.isFinite(discountAmount) ? discountAmount : 0
+  const safeAmountPaid = Number.isFinite(taxableAmount) ? taxableAmount : 0
+  const safeTotalPaid = Number.isFinite(totalPaid) ? totalPaid : 0
+  const safeBalance = Math.max((Number.isFinite(originalPrice) ? originalPrice : 0) - safeAmountPaid, 0)
+  const splitGst = Number.isFinite(gstAmount) ? gstAmount / 2 : 0
+  const issueDate = mapInvoiceDateParts(paymentDate)
+
+  const invoice: MembershipInvoiceData = {
+    title: 'Membership Renewal Invoice',
+    invoiceNumber: invoiceNumber || '-',
+    invoiceDate: issueDate.invoiceDate,
+    invoiceTime: issueDate.invoiceTime,
+    paymentStatus: mapPaymentStatus(status, safeBalance),
+    billTo: {
+      memberName,
+      memberId: memberId || '-',
+    },
+    membership: {
+      subscriptionName: planLabel,
+      fromDate: startDate,
+      toDate: expiryDate,
+      duration: durationLabel,
+      amount: originalPrice,
+    },
+    paymentSummary: {
+      discount: safeDiscount,
+      paymentMode,
+      amountPaid: safeAmountPaid,
+      sgst: splitGst,
+      cgst: splitGst,
+      totalPayment: safeTotalPaid,
+      balance: safeBalance,
+      nextPaymentDate: safeBalance > 0 ? expiryDate : '-',
+    },
+    staff: {
+      createdBy: createdBy || '-',
+      counsellor: counsellor || '-',
+    },
+    gym: DEFAULT_GYM_PROFILE,
+    remarks: notes || transactionReference || null,
+  }
+
   return (
-    <div className="rounded-xl border border-border-light bg-bg-secondary/20 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-text-primary">Membership Invoice</h3>
-        {invoiceNumber && (
-          <span className="text-xs px-2 py-1 rounded bg-bg-card border border-border-light text-text-secondary">
-            {invoiceNumber}
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-        <div><span className="text-text-secondary">Member:</span> <span className="text-text-primary">{memberName}</span></div>
-        <div><span className="text-text-secondary">Plan:</span> <span className="text-text-primary">{planLabel}</span></div>
-        <div><span className="text-text-secondary">Duration:</span> <span className="text-text-primary">{durationLabel}</span></div>
-        <div><span className="text-text-secondary">Start Date:</span> <span className="text-text-primary">{startDate}</span></div>
-        <div><span className="text-text-secondary">Expiry Date:</span> <span className="text-text-primary">{expiryDate}</span></div>
-        <div><span className="text-text-secondary">Payment Date:</span> <span className="text-text-primary">{paymentDate}</span></div>
-      </div>
-
-      <div className="border-t border-border-light pt-3 space-y-1 text-sm">
-        <div className="flex justify-between"><span className="text-text-secondary">Original Membership Price</span><span className="text-text-primary">{money(originalPrice)}</span></div>
-        <div className="flex justify-between"><span className="text-text-secondary">Discount Amount</span><span className="text-text-primary">{money(discountAmount)}</span></div>
-        <div className="flex justify-between"><span className="text-text-secondary">Taxable Amount</span><span className="text-text-primary">{money(taxableAmount)}</span></div>
-        <div className="flex justify-between"><span className="text-text-secondary">GST (5%)</span><span className="text-text-primary">{money(gstAmount)}</span></div>
-        <div className="flex justify-between font-semibold text-base pt-1"><span className="text-text-primary">Total Paid</span><span className="text-primary">{money(totalPaid)}</span></div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm border-t border-border-light pt-3">
-        <div><span className="text-text-secondary">Payment Mode:</span> <span className="text-text-primary">{paymentMode}</span></div>
-        <div><span className="text-text-secondary">Transaction Ref:</span> <span className="text-text-primary">{transactionReference || '-'}</span></div>
-      </div>
-
-      {notes && <p className="text-xs text-text-secondary">Notes: {notes}</p>}
-
-      {showDownload && onDownloadInvoice && (
-        <div className="pt-1">
-          <Button size="sm" onClick={onDownloadInvoice} isLoading={downloading}>
-            Download Invoice
-          </Button>
-        </div>
-      )}
+    <div className="rounded-xl border border-border-light bg-bg-secondary/20 p-2 md:p-3">
+      <MembershipInvoice
+        invoice={invoice}
+        showDownload={showDownload}
+        onDownloadInvoice={onDownloadInvoice}
+        downloading={downloading}
+      />
     </div>
   )
 }

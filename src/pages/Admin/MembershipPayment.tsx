@@ -292,6 +292,7 @@ export default function MembershipPayment() {
                 <MembershipInvoiceCard
                   invoiceNumber={savedInvoice.invoice_number}
                   memberName={savedInvoice.member_name}
+                  memberId={String(savedInvoice.member_id)}
                   planLabel={savedInvoice.plan_label}
                   durationLabel={subscription.duration_label}
                   startDate={formatDate(subscription.start_date)}
@@ -303,8 +304,11 @@ export default function MembershipPayment() {
                   totalPaid={savedInvoice.total_paid || calculations.totalAmountPayable}
                   paymentMode={(savedInvoice.payment_mode || paymentMode).replace('_', ' ').toUpperCase()}
                   transactionReference={savedInvoice.transaction_reference}
-                  paymentDate={savedInvoice.payment_date ? formatDate(savedInvoice.payment_date) : formatDate(paymentDate)}
+                  paymentDate={savedInvoice.payment_date || paymentDate}
                   notes={savedInvoice.notes}
+                  status={savedInvoice.status}
+                  createdBy={userName}
+                  counsellor={userName}
                   showDownload
                   onDownloadInvoice={handleDownloadInvoice}
                   downloading={isDownloading}
