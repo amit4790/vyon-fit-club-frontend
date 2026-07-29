@@ -10,6 +10,7 @@ import {
   InvoiceListApiResponse,
   InvoiceOperationApiResponse,
   InvoiceStatus,
+  AssignSubscriptionPayload,
   MemberSubscriptionsApiResponse,
   MemberDeleteApiResponse,
   MemberListApiResponse,
@@ -62,7 +63,7 @@ export const adminService = {
   updatePlanPrice: (planId: number, payload: { base_price: number; tax_percent?: number }) =>
     httpClient.patch<PlanOptionOperationApiResponse>(`/admin/plans/${planId}`, payload),
 
-  assignSubscription: (memberId: number, payload: { plan_id: number; start_date: string }) =>
+  assignSubscription: (memberId: number, payload: AssignSubscriptionPayload) =>
     httpClient.post<SubscriptionOperationApiResponse>(`/admin/members/${memberId}/subscriptions`, payload),
 
   getMemberSubscriptions: (memberId: number) =>

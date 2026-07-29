@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthService } from '../../api/api'
 import { ApiErrorHandler } from '../../api/errors'
@@ -25,9 +25,59 @@ import {
   MemberPayload,
   MemberRecord,
   PlanFamilyRecord,
+  SubscriptionDurationUnit,
   SubscriptionRecord,
 } from '../../types'
 import AdminShell from '../../layouts/AdminShell'
+
+const ASSIGNABLE_MEMBERSHIP_LABELS = [
+  'VYON BASIC',
+  'VYON ADVANCE',
+  'VYON PRO - Prime',
+  'VYON PRO - Elite',
+  'VYON PRO - Master',
+] as const
+
+type AssignablePlanEntry = {
+  label: (typeof ASSIGNABLE_MEMBERSHIP_LABELS)[number]
+  option: PlanFamilyRecord['options'][number]
+}
+
+function computeAssignablePlanLabel(family: string, variant: string | null): string {
+  if (family.toUpperCase() === 'VYON PRO' && variant) {
+    return `VYON PRO - ${variant}`
+  }
+  return family
+}
+
+function computeEndDate(startDate: string, durationValue: number, durationUnit: SubscriptionDurationUnit): string {
+  if (!startDate || !Number.isFinite(durationValue) || durationValue <= 0) {
+    return ''
+  }
+
+  const [yearText, monthText, dayText] = startDate.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!year || !month || !day) {
+    return ''
+  }
+
+  if (durationUnit === 'months') {
+    const monthIndex = month - 1 + durationValue
+    const endYear = year + Math.floor(monthIndex / 12)
+    const endMonth = (monthIndex % 12) + 1
+    const lastDay = new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate()
+    const endDay = Math.min(day, lastDay)
+    const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay))
+    endDate.setUTCDate(endDate.getUTCDate() - 1)
+    return endDate.toISOString().slice(0, 10)
+  }
+
+  const endDate = new Date(Date.UTC(year, month - 1, day))
+  endDate.setUTCDate(endDate.getUTCDate() + durationValue - 1)
+  return endDate.toISOString().slice(0, 10)
+}
 
 const DEFAULT_MEMBER_FORM = {
   full_name: '',
@@ -80,6 +130,8 @@ export default function AdminMembers() {
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(
     new Date().toISOString().slice(0, 10)
   )
+  const [subscriptionDurationValue, setSubscriptionDurationValue] = useState('1')
+  const [subscriptionDurationUnit, setSubscriptionDurationUnit] = useState<SubscriptionDurationUnit>('months')
   const [subscriptionFormError, setSubscriptionFormError] = useState<string | null>(null)
   const [expiringSubscriptions, setExpiringSubscriptions] = useState<
     ExpiringSubscriptionsApiResponse['data']
@@ -97,6 +149,48 @@ export default function AdminMembers() {
   const [memberForm, setMemberForm] = useState<MemberFormState>(DEFAULT_MEMBER_FORM)
   const [memberFormError, setMemberFormError] = useState<string | null>(null)
   const { toasts, removeToast, success, error: errorToast } = useToast()
+
+  const assignablePlans = useMemo(() => {
+    const flattened = planCatalog.flatMap((family) =>
+      family.options.map((option) => ({
+        option,
+        label: computeAssignablePlanLabel(family.family, option.variant),
+      }))
+    )
+
+    const toKey = (value: string) => value.trim().toLowerCase()
+    const byLabel = new Map<string, (typeof flattened)[number]>()
+    for (const entry of flattened) {
+      const key = toKey(entry.label)
+      if (!byLabel.has(key)) {
+        byLabel.set(key, entry)
+      }
+    }
+
+    const ordered: AssignablePlanEntry[] = []
+    for (const label of ASSIGNABLE_MEMBERSHIP_LABELS) {
+      const matched = byLabel.get(toKey(label))
+      if (matched) {
+        ordered.push({
+          label,
+          option: matched.option,
+        })
+      }
+    }
+
+    return ordered
+  }, [planCatalog])
+
+  const parsedDurationValue = Number.parseInt(subscriptionDurationValue, 10)
+  const calculatedSubscriptionEndDate = useMemo(
+    () => computeEndDate(subscriptionStartDate, parsedDurationValue, subscriptionDurationUnit),
+    [subscriptionStartDate, parsedDurationValue, subscriptionDurationUnit]
+  )
+
+  const selectedAssignablePlan = useMemo(
+    () => assignablePlans.find((entry) => String(entry.option.id) === selectedPlanId) || null,
+    [assignablePlans, selectedPlanId]
+  )
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -120,6 +214,21 @@ export default function AdminMembers() {
       setSearchParams(searchParams, { replace: true })
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!isSubscriptionModalOpen) {
+      return
+    }
+
+    if (assignablePlans.length === 0) {
+      return
+    }
+
+    const selectedExists = assignablePlans.some((entry) => String(entry.option.id) === selectedPlanId)
+    if (!selectedExists) {
+      setSelectedPlanId(String(assignablePlans[0].option.id))
+    }
+  }, [assignablePlans, isSubscriptionModalOpen, selectedPlanId])
 
   const loadMembers = async (
     page = memberPage,
@@ -220,9 +329,6 @@ export default function AdminMembers() {
       setPlanLoading(true)
       const response = await adminService.getPlanCatalog()
       setPlanCatalog(response.data)
-      if (response.data.length > 0 && response.data[0].options.length > 0) {
-        setSelectedPlanId(String(response.data[0].options[0].id))
-      }
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
       setSubscriptionFormError(apiError.message)
@@ -276,6 +382,8 @@ export default function AdminMembers() {
     setSubscriptionMember(member)
     setSubscriptionFormError(null)
     setSubscriptionStartDate(new Date().toISOString().slice(0, 10))
+    setSubscriptionDurationValue('1')
+    setSubscriptionDurationUnit('months')
     setSelectedPlanId('')
     setIsSubscriptionModalOpen(true)
     await loadPlanCatalog()
@@ -292,6 +400,8 @@ export default function AdminMembers() {
     setIsSubscriptionModalOpen(false)
     setSubscriptionMember(null)
     setSelectedPlanId('')
+    setSubscriptionDurationValue('1')
+    setSubscriptionDurationUnit('months')
     setSubscriptionFormError(null)
   }
 
@@ -405,6 +515,21 @@ export default function AdminMembers() {
       return
     }
 
+    if (!Number.isFinite(parsedDurationValue) || parsedDurationValue <= 0) {
+      setSubscriptionFormError('Duration value must be greater than zero')
+      return
+    }
+
+    if (subscriptionDurationUnit !== 'months' && subscriptionDurationUnit !== 'days') {
+      setSubscriptionFormError('Duration unit must be Months or Days')
+      return
+    }
+
+    if (!calculatedSubscriptionEndDate) {
+      setSubscriptionFormError('Unable to calculate end date from the selected duration')
+      return
+    }
+
     try {
       setIsSubmittingSubscription(true)
       setSubscriptionFormError(null)
@@ -412,6 +537,8 @@ export default function AdminMembers() {
       const response = await adminService.assignSubscription(subscriptionMember.id, {
         plan_id: Number(selectedPlanId),
         start_date: subscriptionStartDate,
+        duration_value: parsedDurationValue,
+        duration_unit: subscriptionDurationUnit,
       })
 
       const sentCount = (response.notifications || []).filter((item) => item.status === 'sent').length
@@ -834,28 +961,48 @@ export default function AdminMembers() {
             <Select
               label="Membership Plan"
               value={selectedPlanId}
-              options={planCatalog.flatMap((family) =>
-                family.options.map((option) => ({
-                  value: String(option.id),
-                  label: `${family.family} - ${option.variant || option.duration_label} (INR ${option.base_price})`,
-                }))
-              )}
+              options={assignablePlans.map((entry) => ({
+                value: String(entry.option.id),
+                label: entry.label,
+              }))}
               onChange={(event) => setSelectedPlanId(event.target.value)}
+            />
+
+            <div className="rounded border border-border-light px-3 py-3">
+              <p className="text-sm font-semibold text-text-secondary mb-3">Duration</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input
+                  label="Value"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={subscriptionDurationValue}
+                  onChange={(event) => setSubscriptionDurationValue(event.target.value)}
+                />
+                <Select
+                  label="Unit"
+                  value={subscriptionDurationUnit}
+                  options={[
+                    { value: 'months', label: 'Months' },
+                    { value: 'days', label: 'Days' },
+                  ]}
+                  onChange={(event) => setSubscriptionDurationUnit(event.target.value as SubscriptionDurationUnit)}
+                />
+              </div>
+            </div>
+
+            <Input
+              label="Calculated End Date"
+              type="date"
+              value={calculatedSubscriptionEndDate}
+              readOnly
             />
 
             {selectedPlanId && (
               <div className="rounded border border-border-light px-3 py-2 text-sm text-text-secondary">
-                {(() => {
-                  const selected = planCatalog
-                    .flatMap((family) => family.options.map((option) => ({ option, family })))
-                    .find((entry) => String(entry.option.id) === selectedPlanId)
-
-                  if (!selected) {
-                    return 'Select a plan to view pricing details.'
-                  }
-
-                  return `Base INR ${selected.option.base_price.toLocaleString('en-IN')} + GST ${selected.option.tax_percent}% = INR ${selected.option.total_price.toLocaleString('en-IN')}`
-                })()}
+                {selectedAssignablePlan
+                  ? `Selected Plan: ${selectedAssignablePlan.label} | Catalogue Price: INR ${selectedAssignablePlan.option.base_price.toLocaleString('en-IN')} (Total with GST: INR ${selectedAssignablePlan.option.total_price.toLocaleString('en-IN')})`
+                  : 'Select a plan to view pricing details.'}
               </div>
             )}
           </div>

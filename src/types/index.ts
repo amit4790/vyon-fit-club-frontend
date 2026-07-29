@@ -101,6 +101,15 @@ export interface PlanOptionOperationApiResponse {
   data: PlanOptionRecord
 }
 
+export type SubscriptionDurationUnit = 'months' | 'days'
+
+export interface AssignSubscriptionPayload {
+  plan_id: number
+  start_date: string
+  duration_value?: number
+  duration_unit?: SubscriptionDurationUnit
+}
+
 export interface TrainerRecord {
   id: number
   full_name: string
