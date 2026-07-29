@@ -22,6 +22,14 @@ export function PaymentSummary({ invoice }: PaymentSummaryProps) {
                 <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.discount)}</td>
               </tr>
               <tr>
+                <td className="border-b border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Taxable Amount</td>
+                <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.taxableAmount)}</td>
+              </tr>
+              <tr>
+                <td className="border-b border-r border-border-light bg-zinc-100 px-3 py-2 font-semibold text-black print:border-zinc-800 print:bg-white">Final Amount Payable</td>
+                <td className="border-b border-border-light bg-zinc-100 px-3 py-2 text-right font-semibold text-black print:border-zinc-800 print:bg-white">INR {formatMoney(summary.finalAmountPayable)}</td>
+              </tr>
+              <tr>
                 <td className="border-b border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Amount Paid</td>
                 <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.amountPaid)}</td>
               </tr>
@@ -34,16 +42,8 @@ export function PaymentSummary({ invoice }: PaymentSummaryProps) {
                 <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.cgst)}</td>
               </tr>
               <tr>
-                <td className="border-b border-r border-border-light bg-zinc-100 px-3 py-2 font-semibold text-black print:border-zinc-800 print:bg-white">Total Payment</td>
-                <td className="border-b border-border-light bg-zinc-100 px-3 py-2 text-right font-semibold text-black print:border-zinc-800 print:bg-white">INR {formatMoney(summary.totalPayment)}</td>
-              </tr>
-              <tr>
-                <td className="border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Balance</td>
-                <td className="px-3 py-2 text-right font-semibold text-black">INR {formatMoney(summary.balance)}</td>
-              </tr>
-              <tr>
-                <td className="border-t border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Next Payment Date</td>
-                <td className="border-t border-border-light px-3 py-2 text-right text-black print:border-zinc-800">{displayText(summary.nextPaymentDate)}</td>
+                <td className="border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Outstanding Balance</td>
+                <td className="px-3 py-2 text-right font-semibold text-black">INR {formatMoney(summary.outstandingBalance)}</td>
               </tr>
             </tbody>
           </table>

@@ -14,7 +14,9 @@ interface MembershipInvoiceCardProps {
   discountAmount: number
   taxableAmount: number
   gstAmount: number
-  totalPaid: number
+  finalAmountPayable: number
+  amountPaidToday: number
+  outstandingBalance: number
   paymentMode: string
   transactionReference?: string | null
   paymentDate: string
@@ -28,14 +30,14 @@ interface MembershipInvoiceCardProps {
 }
 
 function mapPaymentStatus(status?: string | null, balance = 0): MembershipInvoiceData['paymentStatus'] {
+  if (balance > 0) {
+    return 'PARTIAL'
+  }
+
   const normalized = status?.trim().toLowerCase()
 
   if (!normalized) {
     return 'PENDING'
-  }
-
-  if (normalized === 'paid' && balance > 0) {
-    return 'PARTIAL'
   }
 
   if (normalized === 'paid') {
@@ -44,6 +46,10 @@ function mapPaymentStatus(status?: string | null, balance = 0): MembershipInvoic
 
   if (normalized === 'pending') {
     return 'PENDING'
+  }
+
+  if (normalized === 'partial') {
+    return 'PARTIAL'
   }
 
   if (normalized === 'cancelled') {
@@ -82,7 +88,9 @@ export default function MembershipInvoiceCard({
   discountAmount,
   taxableAmount,
   gstAmount,
-  totalPaid,
+  finalAmountPayable,
+  amountPaidToday,
+  outstandingBalance,
   paymentMode,
   transactionReference,
   paymentDate,
@@ -95,9 +103,10 @@ export default function MembershipInvoiceCard({
   showDownload = true,
 }: MembershipInvoiceCardProps) {
   const safeDiscount = Number.isFinite(discountAmount) ? discountAmount : 0
-  const safeAmountPaid = Number.isFinite(taxableAmount) ? taxableAmount : 0
-  const safeTotalPaid = Number.isFinite(totalPaid) ? totalPaid : 0
-  const safeBalance = Math.max((Number.isFinite(originalPrice) ? originalPrice : 0) - safeAmountPaid, 0)
+  const safeTaxableAmount = Number.isFinite(taxableAmount) ? taxableAmount : 0
+  const safeFinalAmountPayable = Number.isFinite(finalAmountPayable) ? finalAmountPayable : 0
+  const safeAmountPaid = Number.isFinite(amountPaidToday) ? amountPaidToday : 0
+  const safeBalance = Math.max(Number.isFinite(outstandingBalance) ? outstandingBalance : 0, 0)
   const splitGst = Number.isFinite(gstAmount) ? gstAmount / 2 : 0
   const issueDate = mapInvoiceDateParts(paymentDate)
 
@@ -120,13 +129,13 @@ export default function MembershipInvoiceCard({
     },
     paymentSummary: {
       discount: safeDiscount,
+      taxableAmount: safeTaxableAmount,
       paymentMode,
+      finalAmountPayable: safeFinalAmountPayable,
       amountPaid: safeAmountPaid,
       sgst: splitGst,
       cgst: splitGst,
-      totalPayment: safeTotalPaid,
-      balance: safeBalance,
-      nextPaymentDate: safeBalance > 0 ? expiryDate : '-',
+      outstandingBalance: safeBalance,
     },
     staff: {
       createdBy: createdBy || '-',

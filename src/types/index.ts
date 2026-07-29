@@ -259,7 +259,7 @@ export interface ExpiringSubscriptionsApiResponse {
   }
 }
 
-export type InvoiceStatus = 'pending' | 'paid' | 'failed' | 'cancelled'
+export type InvoiceStatus = 'pending' | 'partial' | 'paid' | 'failed' | 'cancelled'
 
 export interface DeliveryResultRecord {
   channel: 'email' | 'sms'
@@ -284,10 +284,13 @@ export interface InvoiceRecord {
   discount_amount: number | null
   discount_percentage: number | null
   gst_amount: number | null
+  amount_paid_today: number | null
+  outstanding_balance: number | null
   total_paid: number | null
   payment_mode: string | null
   transaction_reference: string | null
   payment_date: string | null
+  counsellor: string | null
   notes: string | null
   invoice_download_url: string | null
   status: InvoiceStatus
@@ -314,9 +317,11 @@ export interface InvoiceOperationApiResponse {
 
 export interface CapturePaymentPayload {
   final_amount_received: number
+  amount_paid_today: number
   payment_mode: PaymentMode
   transaction_reference?: string | null
   payment_date: string
+  counsellor?: string | null
   notes?: string | null
 }
 

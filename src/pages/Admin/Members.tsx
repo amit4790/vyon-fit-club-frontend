@@ -903,16 +903,18 @@ export default function AdminMembers() {
                 expiryDate={viewMembershipSubscription.end_date}
                 originalPrice={viewMembershipInvoice.original_price ?? viewMembershipSubscription.base_price}
                 discountAmount={viewMembershipInvoice.discount_amount ?? 0}
-                taxableAmount={viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price}
+                taxableAmount={(viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price) - (viewMembershipInvoice.gst_amount ?? viewMembershipSubscription.tax_amount)}
                 gstAmount={viewMembershipInvoice.gst_amount ?? viewMembershipSubscription.tax_amount}
-                totalPaid={viewMembershipInvoice.total_paid ?? viewMembershipSubscription.total_amount}
+                finalAmountPayable={viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price}
+                amountPaidToday={viewMembershipInvoice.amount_paid_today ?? viewMembershipInvoice.total_paid ?? 0}
+                outstandingBalance={viewMembershipInvoice.outstanding_balance ?? 0}
                 paymentMode={(viewMembershipInvoice.payment_mode || 'N/A').replace('_', ' ').toUpperCase()}
                 transactionReference={viewMembershipInvoice.transaction_reference}
                 paymentDate={viewMembershipInvoice.payment_date || '-'}
                 notes={viewMembershipInvoice.notes}
                 status={viewMembershipInvoice.status}
-                createdBy={userName}
-                counsellor={userName}
+                createdBy="System"
+                counsellor={viewMembershipInvoice.counsellor}
                 showDownload={Boolean(viewMembershipInvoice.invoice_download_url)}
                 onDownloadInvoice={() => downloadInvoice(viewMembershipInvoice.id, viewMembershipInvoice.invoice_number)}
                 downloading={isDownloadingInvoice}

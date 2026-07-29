@@ -53,12 +53,16 @@ export default function MembershipPayment() {
   const [isDownloading, setIsDownloading] = useState(false)
   const [savedInvoice, setSavedInvoice] = useState<InvoiceRecord | null>(null)
 
-  const [finalAmountReceived, setFinalAmountReceived] = useState<string>(
+  const [finalAmountPayable, setFinalAmountPayable] = useState<string>(
+    routeState.subscription ? String(routeState.subscription.base_price) : ''
+  )
+  const [amountPaidToday, setAmountPaidToday] = useState<string>(
     routeState.subscription ? String(routeState.subscription.base_price) : ''
   )
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash')
   const [transactionReference, setTransactionReference] = useState('')
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+  const [counsellor, setCounsellor] = useState('')
   const [notes, setNotes] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -85,7 +89,8 @@ export default function MembershipPayment() {
         setIsLoading(true)
         const response = await adminService.getSubscriptionById(id)
         setSubscription(response.data)
-        setFinalAmountReceived(String(response.data.base_price))
+        setFinalAmountPayable(String(response.data.base_price))
+        setAmountPaidToday(String(response.data.base_price))
         setMemberName(response.data.member_name || '')
       } catch (err: any) {
         const apiError = ApiErrorHandler.parse(err)
@@ -99,23 +104,28 @@ export default function MembershipPayment() {
   }, [navigate, params.subscriptionId, routeState.subscription])
 
   const originalPrice = subscription?.base_price || 0
-  const finalAmount = Number(finalAmountReceived || '0')
+  const finalAmount = Number(finalAmountPayable || '0')
+  const paidToday = Number(amountPaidToday || '0')
 
   const calculations = useMemo(() => {
     const safeFinal = Number.isFinite(finalAmount) && finalAmount > 0 ? finalAmount : 0
+    const safePaidToday = Number.isFinite(paidToday) && paidToday > 0 ? paidToday : 0
     const discountAmount = Math.max(originalPrice - safeFinal, 0)
     const discountPercentage = originalPrice > 0 ? (discountAmount / originalPrice) * 100 : 0
-    const gstAmount = safeFinal * 0.05
-    const totalAmountPayable = safeFinal + gstAmount
+    const taxableAmount = safeFinal > 0 ? safeFinal / 1.05 : 0
+    const gstAmount = Math.max(safeFinal - taxableAmount, 0)
+    const outstandingBalance = Math.max(safeFinal - safePaidToday, 0)
 
     return {
       safeFinal,
+      safePaidToday,
       discountAmount,
       discountPercentage,
+      taxableAmount,
       gstAmount,
-      totalAmountPayable,
+      outstandingBalance,
     }
-  }, [finalAmount, originalPrice])
+  }, [finalAmount, originalPrice, paidToday])
 
   const handleSavePayment = async () => {
     if (!subscription) {
@@ -123,12 +133,22 @@ export default function MembershipPayment() {
     }
 
     if (!calculations.safeFinal || calculations.safeFinal <= 0) {
-      setFormError('Final Amount Received must be greater than zero.')
+      setFormError('Final Amount Payable must be greater than zero.')
       return
     }
 
     if (calculations.safeFinal > originalPrice) {
-      setFormError('Final Amount Received cannot exceed Original Membership Price.')
+      setFormError('Final Amount Payable cannot exceed Original Membership Price.')
+      return
+    }
+
+    if (!calculations.safePaidToday || calculations.safePaidToday <= 0) {
+      setFormError('Amount Paid Today must be greater than zero.')
+      return
+    }
+
+    if (calculations.safePaidToday > calculations.safeFinal) {
+      setFormError('Amount Paid Today cannot exceed Final Amount Payable.')
       return
     }
 
@@ -138,9 +158,11 @@ export default function MembershipPayment() {
 
       const response = await adminService.captureSubscriptionPayment(subscription.id, {
         final_amount_received: calculations.safeFinal,
+        amount_paid_today: calculations.safePaidToday,
         payment_mode: paymentMode,
         transaction_reference: transactionReference.trim() || null,
         payment_date: paymentDate,
+        counsellor: counsellor.trim() || null,
         notes: notes.trim() || null,
       })
 
@@ -215,12 +237,33 @@ export default function MembershipPayment() {
               <Input label="Original Membership Price" value={money(originalPrice)} readOnly />
 
               <Input
-                label="Final Amount Received"
+                label="Final Amount Payable"
                 type="number"
                 min="0"
                 step="0.01"
-                value={finalAmountReceived}
-                onChange={(event) => setFinalAmountReceived(event.target.value)}
+                value={finalAmountPayable}
+                onChange={(event) => setFinalAmountPayable(event.target.value)}
+              />
+
+              <Input
+                label="Amount Paid Today"
+                type="number"
+                min="0"
+                step="0.01"
+                value={amountPaidToday}
+                onChange={(event) => setAmountPaidToday(event.target.value)}
+              />
+
+              <Input
+                label="Outstanding Balance"
+                value={money(calculations.outstandingBalance)}
+                readOnly
+              />
+
+              <Input
+                label="Counsellor (Optional)"
+                value={counsellor}
+                onChange={(event) => setCounsellor(event.target.value)}
               />
 
               <Select
@@ -278,12 +321,24 @@ export default function MembershipPayment() {
                 <span className="text-text-primary">{calculations.discountPercentage.toFixed(2)}%</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-text-secondary">Taxable Amount</span>
+                <span className="text-text-primary">{money(calculations.taxableAmount)}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-text-secondary">GST (5%)</span>
                 <span className="text-text-primary">{money(calculations.gstAmount)}</span>
               </div>
               <div className="flex justify-between font-semibold border-t border-border-light pt-2">
-                <span className="text-text-primary">Total Amount Payable</span>
-                <span className="text-primary">{money(calculations.totalAmountPayable)}</span>
+                <span className="text-text-primary">Final Amount Payable</span>
+                <span className="text-primary">{money(calculations.safeFinal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Amount Paid Today</span>
+                <span className="text-text-primary">{money(calculations.safePaidToday)}</span>
+              </div>
+              <div className="flex justify-between font-semibold">
+                <span className="text-text-primary">Outstanding Balance</span>
+                <span className="text-primary">{money(calculations.outstandingBalance)}</span>
               </div>
             </div>
 
@@ -297,18 +352,20 @@ export default function MembershipPayment() {
                   durationLabel={subscription.duration_label}
                   startDate={formatDate(subscription.start_date)}
                   expiryDate={formatDate(subscription.end_date)}
-                  originalPrice={savedInvoice.original_price || originalPrice}
-                  discountAmount={savedInvoice.discount_amount || 0}
-                  taxableAmount={savedInvoice.final_amount_received || calculations.safeFinal}
-                  gstAmount={savedInvoice.gst_amount || calculations.gstAmount}
-                  totalPaid={savedInvoice.total_paid || calculations.totalAmountPayable}
+                  originalPrice={savedInvoice.original_price ?? originalPrice}
+                  discountAmount={savedInvoice.discount_amount ?? 0}
+                  taxableAmount={(savedInvoice.final_amount_received ?? calculations.safeFinal) - (savedInvoice.gst_amount ?? calculations.gstAmount)}
+                  gstAmount={savedInvoice.gst_amount ?? calculations.gstAmount}
+                  finalAmountPayable={savedInvoice.final_amount_received ?? calculations.safeFinal}
+                  amountPaidToday={savedInvoice.amount_paid_today ?? calculations.safePaidToday}
+                  outstandingBalance={savedInvoice.outstanding_balance ?? calculations.outstandingBalance}
                   paymentMode={(savedInvoice.payment_mode || paymentMode).replace('_', ' ').toUpperCase()}
                   transactionReference={savedInvoice.transaction_reference}
                   paymentDate={savedInvoice.payment_date || paymentDate}
                   notes={savedInvoice.notes}
                   status={savedInvoice.status}
-                  createdBy={userName}
-                  counsellor={userName}
+                  createdBy="System"
+                  counsellor={savedInvoice.counsellor || counsellor}
                   showDownload
                   onDownloadInvoice={handleDownloadInvoice}
                   downloading={isDownloading}

@@ -25,13 +25,13 @@ export interface MembershipLineItem {
 
 export interface InvoicePaymentSummary {
   discount: number
+  taxableAmount: number
   paymentMode: string
+  finalAmountPayable: number
   amountPaid: number
   sgst: number
   cgst: number
-  totalPayment: number
-  balance: number
-  nextPaymentDate?: string | null
+  outstandingBalance: number
 }
 
 export interface InvoiceStaffDetails {
