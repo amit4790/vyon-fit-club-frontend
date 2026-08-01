@@ -5,7 +5,6 @@ import { ApiErrorHandler } from '../../api/errors'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input, Select } from '../../components/Input'
-import MembershipInvoiceCard from '../../components/MembershipInvoiceCard'
 import { Modal } from '../../components/Modal'
 import {
   Table,
@@ -28,6 +27,7 @@ import {
   SubscriptionDurationUnit,
   SubscriptionRecord,
 } from '../../types'
+import { formatMembershipPlanName } from '../../utils/format'
 import AdminShell from '../../layouts/AdminShell'
 
 const ASSIGNABLE_MEMBERSHIP_LABELS = [
@@ -79,6 +79,31 @@ function computeEndDate(startDate: string, durationValue: number, durationUnit: 
   return endDate.toISOString().slice(0, 10)
 }
 
+function formatDisplayDate(value: string | null | undefined): string {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 const DEFAULT_MEMBER_FORM = {
   full_name: '',
   mobile_number: '',
@@ -92,11 +117,18 @@ const DEFAULT_MEMBER_FORM = {
 
 type MemberFormState = typeof DEFAULT_MEMBER_FORM
 
-type MembershipActionType = 'assign' | 'renew' | 'view'
+type MembershipActionType = 'assign' | 'renew' | 'view' | 'pay'
+
+type MembershipDisplayStatus =
+  | 'active_paid'
+  | 'active_pending_payment'
+  | 'inactive_unpaid'
+  | 'expired'
+  | 'none'
 
 type MemberMembershipSnapshot = {
   action: MembershipActionType
-  membershipStatus: 'active' | 'expired' | 'none'
+  membershipStatus: MembershipDisplayStatus
   currentPlanLabel: string | null
   expiryDate: string | null
   subscription: SubscriptionRecord | null
@@ -145,7 +177,6 @@ export default function AdminMembers() {
   const [viewMembershipMember, setViewMembershipMember] = useState<MemberRecord | null>(null)
   const [viewMembershipSubscription, setViewMembershipSubscription] = useState<SubscriptionRecord | null>(null)
   const [viewMembershipInvoice, setViewMembershipInvoice] = useState<InvoiceRecord | null>(null)
-  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false)
   const [memberForm, setMemberForm] = useState<MemberFormState>(DEFAULT_MEMBER_FORM)
   const [memberFormError, setMemberFormError] = useState<string | null>(null)
   const { toasts, removeToast, success, error: errorToast } = useToast()
@@ -191,6 +222,64 @@ export default function AdminMembers() {
     () => assignablePlans.find((entry) => String(entry.option.id) === selectedPlanId) || null,
     [assignablePlans, selectedPlanId]
   )
+
+  const viewMembershipStatus = useMemo<MembershipDisplayStatus>(() => {
+    if (!viewMembershipSubscription) {
+      return 'none'
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    if (!(viewMembershipSubscription.status === 'active' && viewMembershipSubscription.end_date >= today)) {
+      return 'expired'
+    }
+
+    const paymentStatus = (viewMembershipSubscription.payment_status || '').trim().toLowerCase()
+    if (paymentStatus === 'paid') {
+      return 'active_paid'
+    }
+
+    if (paymentStatus === 'partial') {
+      return 'active_pending_payment'
+    }
+
+    return 'inactive_unpaid'
+  }, [viewMembershipSubscription])
+
+  const viewMembershipFinalAmount = useMemo(() => {
+    if (!viewMembershipSubscription) {
+      return 0
+    }
+
+    return viewMembershipInvoice?.final_amount_received ?? viewMembershipSubscription.total_amount
+  }, [viewMembershipInvoice, viewMembershipSubscription])
+
+  const viewMembershipAmountPaid = useMemo(() => {
+    if (!viewMembershipSubscription) {
+      return 0
+    }
+
+    if (viewMembershipInvoice?.total_paid != null) {
+      return viewMembershipInvoice.total_paid
+    }
+
+    if (viewMembershipInvoice?.amount_paid_today != null) {
+      return viewMembershipInvoice.amount_paid_today
+    }
+
+    return viewMembershipSubscription.payment_status === 'paid' ? viewMembershipFinalAmount : 0
+  }, [viewMembershipFinalAmount, viewMembershipInvoice, viewMembershipSubscription])
+
+  const viewMembershipOutstandingBalance = useMemo(() => {
+    if (!viewMembershipSubscription) {
+      return 0
+    }
+
+    if (viewMembershipInvoice?.outstanding_balance != null) {
+      return viewMembershipInvoice.outstanding_balance
+    }
+
+    return Math.max(viewMembershipFinalAmount - viewMembershipAmountPaid, 0)
+  }, [viewMembershipAmountPaid, viewMembershipFinalAmount, viewMembershipInvoice, viewMembershipSubscription])
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -275,10 +364,22 @@ export default function AdminMembers() {
           let snapshot: MemberMembershipSnapshot
 
           if (activeSubscription) {
+            const paymentStatus = (activeSubscription.payment_status || '').trim().toLowerCase()
+            let membershipStatus: MembershipDisplayStatus = 'inactive_unpaid'
+            let action: MembershipActionType = 'pay'
+
+            if (paymentStatus === 'paid') {
+              membershipStatus = 'active_paid'
+              action = 'view'
+            } else if (paymentStatus === 'partial') {
+              membershipStatus = 'active_pending_payment'
+              action = 'pay'
+            }
+
             snapshot = {
-              action: 'view',
-              membershipStatus: 'active',
-              currentPlanLabel: activeSubscription.plan_label,
+              action,
+              membershipStatus,
+              currentPlanLabel: formatMembershipPlanName(activeSubscription.plan_label),
               expiryDate: activeSubscription.end_date,
               subscription: activeSubscription,
             }
@@ -286,7 +387,7 @@ export default function AdminMembers() {
             snapshot = {
               action: 'renew',
               membershipStatus: 'expired',
-              currentPlanLabel: latestSubscription.plan_label,
+              currentPlanLabel: formatMembershipPlanName(latestSubscription.plan_label),
               expiryDate: latestSubscription.end_date,
               subscription: latestSubscription,
             }
@@ -505,6 +606,20 @@ export default function AdminMembers() {
     await loadMembers(nextPage, activeSearch, true)
   }
 
+  const openSubscriptionPaymentPage = (member: MemberRecord, subscription: SubscriptionRecord | null) => {
+    if (!subscription) {
+      errorToast('Payment route unavailable', 'Unable to find an active subscription for this member.')
+      return
+    }
+
+    navigate(`/admin/subscriptions/${subscription.id}/payment`, {
+      state: {
+        subscription,
+        memberName: member.full_name,
+      },
+    })
+  }
+
   const handleAssignSubscription = async () => {
     if (!subscriptionMember) {
       return
@@ -614,39 +729,39 @@ export default function AdminMembers() {
     }
   }
 
-  const downloadInvoice = async (invoiceId: number, invoiceNumber: string | null) => {
-    try {
-      setIsDownloadingInvoice(true)
-      const blob = await adminService.downloadInvoicePdf(invoiceId)
-      const url = window.URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = `${invoiceNumber || `invoice-${invoiceId}`}.pdf`
-      document.body.appendChild(anchor)
-      anchor.click()
-      anchor.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err: any) {
-      const apiError = ApiErrorHandler.parse(err)
-      errorToast('Unable to download invoice', apiError.message)
-    } finally {
-      setIsDownloadingInvoice(false)
-    }
-  }
-
-  const membershipStatusBadge = (status: 'active' | 'expired' | 'none') => {
-    if (status === 'active') {
+  const membershipStatusBadge = (status: MembershipDisplayStatus) => {
+    if (status === 'active_paid') {
       return 'bg-green-100 text-green-700'
     }
 
-    if (status === 'expired') {
+    if (status === 'active_pending_payment') {
       return 'bg-amber-100 text-amber-700'
+    }
+
+    if (status === 'inactive_unpaid') {
+      return 'bg-rose-100 text-rose-700'
+    }
+
+    if (status === 'expired') {
+      return 'bg-orange-100 text-orange-700'
     }
 
     return 'bg-gray-100 text-gray-700'
   }
 
-  const membershipStatusLabel = (status: 'active' | 'expired' | 'none') => {
+  const membershipStatusLabel = (status: MembershipDisplayStatus) => {
+    if (status === 'active_paid') {
+      return 'Active'
+    }
+
+    if (status === 'active_pending_payment') {
+      return 'Active - Pending Payment'
+    }
+
+    if (status === 'inactive_unpaid') {
+      return 'Inactive (Unpaid)'
+    }
+
     if (status === 'none') {
       return 'No Membership'
     }
@@ -739,12 +854,11 @@ export default function AdminMembers() {
           <p className="text-gray-500 py-8 text-center">No members found</p>
         ) : (
           <>
-            <Table className="overflow-x-visible">
+            <Table>
               <TableHeader>
-                <TableHeaderCell>Name</TableHeaderCell>
-                <TableHeaderCell>Mobile</TableHeaderCell>
-                <TableHeaderCell>Current Plan</TableHeaderCell>
-                <TableHeaderCell>Expiry Date</TableHeaderCell>
+                <TableHeaderCell>Member Name</TableHeaderCell>
+                <TableHeaderCell>Mobile Number</TableHeaderCell>
+                <TableHeaderCell>Membership</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
                 <TableHeaderCell className="text-right">Actions</TableHeaderCell>
               </TableHeader>
@@ -767,8 +881,20 @@ export default function AdminMembers() {
                   >
                     <TableCell className="max-w-[12rem] truncate text-sm text-text-secondary">{member.full_name}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
-                    <TableCell className="max-w-[14rem] truncate text-sm text-text-secondary">{membership.currentPlanLabel || '—'}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{membership.expiryDate || '—'}</TableCell>
+                    <TableCell className="max-w-[16rem] text-sm text-text-secondary">
+                      {membership.currentPlanLabel ? (
+                        <div className="space-y-0.5">
+                          <p className="truncate text-text-primary">{membership.currentPlanLabel}</p>
+                          <p className="text-xs text-text-secondary">
+                            {membership.membershipStatus !== 'expired'
+                              ? `Expires: ${formatDisplayDate(membership.expiryDate)}`
+                              : `Expired: ${formatDisplayDate(membership.expiryDate)}`}
+                          </p>
+                        </div>
+                      ) : (
+                        <span>No Membership</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${membershipStatusBadge(membership.membershipStatus)}`}
@@ -788,29 +914,31 @@ export default function AdminMembers() {
                         >
                           Edit
                         </Button>
-                        {membership.action === 'view' ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={(event) => {
-                              event.stopPropagation()
+                        <Button
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            if (membership.action === 'pay') {
+                              openSubscriptionPaymentPage(member, membership.subscription)
+                              return
+                            }
+
+                            if (membership.action === 'view') {
                               openViewMembershipModal(member)
-                            }}
-                          >
-                            View Membership
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              openAssignSubscriptionModal(member)
-                            }}
-                          >
-                            {membership.action === 'renew' ? 'Renew Membership' : 'Assign Plan'}
-                          </Button>
-                        )}
+                              return
+                            }
+
+                            openAssignSubscriptionModal(member)
+                          }}
+                        >
+                          {membership.action === 'pay'
+                            ? 'Record Payment'
+                            : membership.action === 'view'
+                            ? 'View'
+                            : membership.action === 'renew'
+                              ? 'Renew'
+                              : 'Assign'}
+                        </Button>
                         <Button
                           size="sm"
                           className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
@@ -945,8 +1073,12 @@ export default function AdminMembers() {
             <Button variant="secondary" onClick={closeAssignSubscriptionModal}>
               Cancel
             </Button>
-            <Button onClick={handleAssignSubscription} isLoading={isSubmittingSubscription}>
-              Assign Subscription and Continue to Payment
+            <Button
+              onClick={handleAssignSubscription}
+              isLoading={isSubmittingSubscription}
+              className="whitespace-nowrap"
+            >
+              Continue to Payment
             </Button>
           </div>
         }
@@ -1021,10 +1153,41 @@ export default function AdminMembers() {
       <Modal
         isOpen={isViewMembershipModalOpen}
         onClose={closeViewMembershipModal}
-        title={viewMembershipMember ? `Membership - ${viewMembershipMember.full_name}` : 'Membership Details'}
+        title="Membership Details"
         size="lg"
         footer={
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
+            {viewMembershipSubscription && viewMembershipOutstandingBalance > 0 && (
+              <Button
+                onClick={() => {
+                  if (!viewMembershipSubscription || !viewMembershipMember) {
+                    return
+                  }
+
+                  closeViewMembershipModal()
+                  navigate(`/admin/subscriptions/${viewMembershipSubscription.id}/payment`, {
+                    state: {
+                      subscription: viewMembershipSubscription,
+                      memberName: viewMembershipMember.full_name,
+                    },
+                  })
+                }}
+              >
+                Record Payment
+              </Button>
+            )}
+            {viewMembershipSubscription && viewMembershipStatus === 'expired' && viewMembershipMember && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const member = viewMembershipMember
+                  closeViewMembershipModal()
+                  openAssignSubscriptionModal(member)
+                }}
+              >
+                Renew Membership
+              </Button>
+            )}
             <Button variant="secondary" onClick={closeViewMembershipModal}>
               Close
             </Button>
@@ -1037,43 +1200,50 @@ export default function AdminMembers() {
           <p className="text-sm text-text-secondary">No membership found for this member.</p>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <p className="text-text-secondary">Current Membership: <span className="text-text-primary">{viewMembershipSubscription.plan_label}</span></p>
-              <p className="text-text-secondary">Start Date: <span className="text-text-primary">{viewMembershipSubscription.start_date}</span></p>
-              <p className="text-text-secondary">Expiry Date: <span className="text-text-primary">{viewMembershipSubscription.end_date}</span></p>
-              <p className="text-text-secondary">Payment Status: <span className="text-text-primary">{viewMembershipSubscription.payment_status}</span></p>
+            <div className="rounded-lg border border-border-light bg-bg-secondary/20 p-4">
+              <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Member Name</p>
+                  <p className="mt-1 text-text-primary">{viewMembershipMember?.full_name || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Membership Plan</p>
+                  <p className="mt-1 text-text-primary">{formatMembershipPlanName(viewMembershipSubscription.plan_label)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Membership Duration</p>
+                  <p className="mt-1 text-text-primary">{viewMembershipSubscription.duration_label}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Membership Start Date</p>
+                  <p className="mt-1 text-text-primary">{formatDisplayDate(viewMembershipSubscription.start_date)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Membership Expiry Date</p>
+                  <p className="mt-1 text-text-primary">{formatDisplayDate(viewMembershipSubscription.end_date)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Final Amount Payable</p>
+                  <p className="mt-1 text-text-primary">{formatCurrency(viewMembershipFinalAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Amount Paid</p>
+                  <p className="mt-1 text-text-primary">{formatCurrency(viewMembershipAmountPaid)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Outstanding Balance</p>
+                  <p className="mt-1 text-text-primary">{formatCurrency(viewMembershipOutstandingBalance)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Payment Status</p>
+                  <p className="mt-1 text-text-primary">{(viewMembershipInvoice?.status || viewMembershipSubscription.payment_status).replace('_', ' ').toUpperCase()}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Membership Status</p>
+                  <p className="mt-1 text-text-primary">{membershipStatusLabel(viewMembershipStatus)}</p>
+                </div>
+              </div>
             </div>
-
-            {viewMembershipInvoice ? (
-              <MembershipInvoiceCard
-                invoiceNumber={viewMembershipInvoice.invoice_number}
-                memberName={viewMembershipInvoice.member_name}
-                memberId={String(viewMembershipInvoice.member_id)}
-                planLabel={viewMembershipInvoice.plan_label}
-                durationLabel={viewMembershipSubscription.duration_label}
-                startDate={viewMembershipSubscription.start_date}
-                expiryDate={viewMembershipSubscription.end_date}
-                originalPrice={viewMembershipInvoice.original_price ?? viewMembershipSubscription.base_price}
-                discountAmount={viewMembershipInvoice.discount_amount ?? 0}
-                taxableAmount={(viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price) - (viewMembershipInvoice.gst_amount ?? viewMembershipSubscription.tax_amount)}
-                gstAmount={viewMembershipInvoice.gst_amount ?? viewMembershipSubscription.tax_amount}
-                finalAmountPayable={viewMembershipInvoice.final_amount_received ?? viewMembershipSubscription.base_price}
-                amountPaidToday={viewMembershipInvoice.amount_paid_today ?? viewMembershipInvoice.total_paid ?? 0}
-                outstandingBalance={viewMembershipInvoice.outstanding_balance ?? 0}
-                paymentMode={(viewMembershipInvoice.payment_mode || 'N/A').replace('_', ' ').toUpperCase()}
-                transactionReference={viewMembershipInvoice.transaction_reference}
-                paymentDate={viewMembershipInvoice.payment_date || '-'}
-                notes={viewMembershipInvoice.notes}
-                status={viewMembershipInvoice.status}
-                createdBy="System"
-                counsellor={viewMembershipInvoice.counsellor}
-                showDownload={Boolean(viewMembershipInvoice.invoice_download_url)}
-                onDownloadInvoice={() => downloadInvoice(viewMembershipInvoice.id, viewMembershipInvoice.invoice_number)}
-                downloading={isDownloadingInvoice}
-              />
-            ) : (
-              <p className="text-sm text-text-secondary">Payment details are not recorded yet.</p>
-            )}
           </div>
         )}
       </Modal>

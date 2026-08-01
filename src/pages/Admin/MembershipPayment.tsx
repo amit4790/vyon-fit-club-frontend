@@ -10,7 +10,7 @@ import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { InvoiceRecord, PaymentMode, SubscriptionRecord } from '../../types'
-import { formatCurrency } from '../../utils/format'
+import { formatCurrency, formatMembershipPlanName } from '../../utils/format'
 
 interface PaymentRouteState {
   subscription?: SubscriptionRecord
@@ -26,6 +26,15 @@ const PAYMENT_MODE_OPTIONS: Array<{ value: PaymentMode; label: string }> = [
 
 function money(value: number): string {
   return formatCurrency(value)
+}
+
+function toAmountInput(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return ''
+  }
+
+  const rounded = Math.round(value * 100) / 100
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2)
 }
 
 function formatDate(value: string): string {
@@ -52,13 +61,11 @@ export default function MembershipPayment() {
   const [isSaving, setIsSaving] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [savedInvoice, setSavedInvoice] = useState<InvoiceRecord | null>(null)
+  const [existingInvoice, setExistingInvoice] = useState<InvoiceRecord | null>(null)
+  const [previousAmountPaid, setPreviousAmountPaid] = useState(0)
 
-  const [finalAmountPayable, setFinalAmountPayable] = useState<string>(
-    routeState.subscription ? String(routeState.subscription.base_price) : ''
-  )
-  const [amountPaidToday, setAmountPaidToday] = useState<string>(
-    routeState.subscription ? String(routeState.subscription.base_price) : ''
-  )
+  const [finalAmountPayable, setFinalAmountPayable] = useState<string>('')
+  const [amountPaidToday, setAmountPaidToday] = useState<string>('')
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash')
   const [transactionReference, setTransactionReference] = useState('')
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
@@ -89,8 +96,6 @@ export default function MembershipPayment() {
         setIsLoading(true)
         const response = await adminService.getSubscriptionById(id)
         setSubscription(response.data)
-        setFinalAmountPayable(String(response.data.base_price))
-        setAmountPaidToday(String(response.data.base_price))
         setMemberName(response.data.member_name || '')
       } catch (err: any) {
         const apiError = ApiErrorHandler.parse(err)
@@ -103,29 +108,86 @@ export default function MembershipPayment() {
     loadSubscription()
   }, [navigate, params.subscriptionId, routeState.subscription])
 
-  const originalPrice = subscription?.base_price || 0
+  useEffect(() => {
+    const loadExistingInvoice = async () => {
+      if (!subscription?.member_id) {
+        setExistingInvoice(null)
+        return
+      }
+
+      try {
+        const response = await adminService.getInvoices({
+          page: 1,
+          pageSize: 100,
+          memberId: subscription.member_id,
+        })
+
+        const linkedInvoices = response.data.filter((invoice) => invoice.subscription_id === subscription.id)
+        if (linkedInvoices.length === 0) {
+          setExistingInvoice(null)
+          setPreviousAmountPaid(0)
+          setFinalAmountPayable(String(subscription.total_amount || ''))
+          setAmountPaidToday('')
+          return
+        }
+
+        const latestLinkedInvoice = [...linkedInvoices].sort((a, b) => {
+          const left = new Date(b.issued_at).getTime()
+          const right = new Date(a.issued_at).getTime()
+          return left - right
+        })[0]
+
+        setExistingInvoice(latestLinkedInvoice)
+
+        const finalFromInvoice = Number(latestLinkedInvoice.final_amount_received ?? subscription.total_amount ?? 0)
+        const paidSoFarFromInvoice = latestLinkedInvoice.total_paid != null
+          ? Number(latestLinkedInvoice.total_paid)
+          : latestLinkedInvoice.amount_paid_today != null
+            ? Number(latestLinkedInvoice.amount_paid_today)
+            : 0
+        const outstandingFromInvoice = latestLinkedInvoice.outstanding_balance != null
+          ? Number(latestLinkedInvoice.outstanding_balance)
+          : Math.max(finalFromInvoice - paidSoFarFromInvoice, 0)
+        const safePreviousPaid = Math.max(Math.min(paidSoFarFromInvoice, finalFromInvoice), 0)
+
+        setPreviousAmountPaid(safePreviousPaid)
+        setFinalAmountPayable(String(finalFromInvoice > 0 ? finalFromInvoice : subscription.total_amount || ''))
+        setAmountPaidToday(outstandingFromInvoice > 0 ? toAmountInput(outstandingFromInvoice) : '')
+      } catch {
+        setExistingInvoice(null)
+        setPreviousAmountPaid(0)
+        setFinalAmountPayable(String(subscription.total_amount || ''))
+      }
+    }
+
+    loadExistingInvoice()
+  }, [subscription])
+
   const finalAmount = Number(finalAmountPayable || '0')
   const paidToday = Number(amountPaidToday || '0')
+  const latestInvoice = savedInvoice || existingInvoice
 
   const calculations = useMemo(() => {
     const safeFinal = Number.isFinite(finalAmount) && finalAmount > 0 ? finalAmount : 0
     const safePaidToday = Number.isFinite(paidToday) && paidToday > 0 ? paidToday : 0
-    const discountAmount = Math.max(originalPrice - safeFinal, 0)
-    const discountPercentage = originalPrice > 0 ? (discountAmount / originalPrice) * 100 : 0
+    const paidSoFar = Math.max(Math.min(previousAmountPaid, safeFinal), 0)
+    const outstandingBeforePayment = Math.max(safeFinal - paidSoFar, 0)
     const taxableAmount = safeFinal > 0 ? safeFinal / 1.05 : 0
     const gstAmount = Math.max(safeFinal - taxableAmount, 0)
-    const outstandingBalance = Math.max(safeFinal - safePaidToday, 0)
+    const outstandingBalance = Math.max(outstandingBeforePayment - safePaidToday, 0)
+    const totalPaidAfterPayment = Math.min(paidSoFar + safePaidToday, safeFinal)
 
     return {
       safeFinal,
       safePaidToday,
-      discountAmount,
-      discountPercentage,
+      paidSoFar,
+      outstandingBeforePayment,
+      totalPaidAfterPayment,
       taxableAmount,
       gstAmount,
       outstandingBalance,
     }
-  }, [finalAmount, originalPrice, paidToday])
+  }, [finalAmount, paidToday, previousAmountPaid])
 
   const handleSavePayment = async () => {
     if (!subscription) {
@@ -137,18 +199,18 @@ export default function MembershipPayment() {
       return
     }
 
-    if (calculations.safeFinal > originalPrice) {
-      setFormError('Final Amount Payable cannot exceed Original Membership Price.')
-      return
-    }
-
     if (!calculations.safePaidToday || calculations.safePaidToday <= 0) {
       setFormError('Amount Paid Today must be greater than zero.')
       return
     }
 
-    if (calculations.safePaidToday > calculations.safeFinal) {
-      setFormError('Amount Paid Today cannot exceed Final Amount Payable.')
+    if (calculations.safeFinal < calculations.paidSoFar) {
+      setFormError('Final Amount Payable cannot be lower than already paid amount.')
+      return
+    }
+
+    if (calculations.safePaidToday > calculations.outstandingBeforePayment) {
+      setFormError('Amount Paid Today cannot exceed pending balance.')
       return
     }
 
@@ -158,7 +220,7 @@ export default function MembershipPayment() {
 
       const response = await adminService.captureSubscriptionPayment(subscription.id, {
         final_amount_received: calculations.safeFinal,
-        amount_paid_today: calculations.safePaidToday,
+        amount_paid_today: calculations.totalPaidAfterPayment,
         payment_mode: paymentMode,
         transaction_reference: transactionReference.trim() || null,
         payment_date: paymentDate,
@@ -168,6 +230,17 @@ export default function MembershipPayment() {
 
       setSavedInvoice(response.data)
       success('Payment saved', `Invoice ${response.data.invoice_number || `#${response.data.id}`} generated.`)
+      setExistingInvoice(response.data)
+      const nextFinal = Number(response.data.final_amount_received ?? calculations.safeFinal)
+      const nextPaid = response.data.total_paid != null
+        ? Number(response.data.total_paid)
+        : response.data.amount_paid_today != null
+          ? Number(response.data.amount_paid_today)
+          : calculations.totalPaidAfterPayment
+      const nextOutstanding = Number(response.data.outstanding_balance ?? 0)
+      setPreviousAmountPaid(Math.max(Math.min(nextPaid, nextFinal), 0))
+      setFinalAmountPayable(String(nextFinal))
+      setAmountPaidToday(nextOutstanding > 0 ? toAmountInput(nextOutstanding) : '')
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
       setFormError(apiError.message)
@@ -177,17 +250,17 @@ export default function MembershipPayment() {
   }
 
   const handleDownloadInvoice = async () => {
-    if (!savedInvoice) {
+    if (!latestInvoice) {
       return
     }
 
     try {
       setIsDownloading(true)
-      const blob = await adminService.downloadInvoicePdf(savedInvoice.id)
+      const blob = await adminService.downloadInvoicePdf(latestInvoice.id)
       const url = window.URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = `${savedInvoice.invoice_number || `invoice-${savedInvoice.id}`}.pdf`
+      anchor.download = `${latestInvoice.invoice_number || `invoice-${latestInvoice.id}`}.pdf`
       document.body.appendChild(anchor)
       anchor.click()
       anchor.remove()
@@ -230,11 +303,10 @@ export default function MembershipPayment() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Member Name" value={memberName || `Member #${subscription.member_id}`} readOnly />
-              <Input label="Membership Plan" value={subscription.plan_label} readOnly />
+              <Input label="Membership Plan" value={formatMembershipPlanName(subscription.plan_label)} readOnly />
               <Input label="Membership Duration" value={subscription.duration_label} readOnly />
               <Input label="Membership Start Date" value={formatDate(subscription.start_date)} readOnly />
               <Input label="Membership Expiry Date" value={formatDate(subscription.end_date)} readOnly />
-              <Input label="Original Membership Price" value={money(originalPrice)} readOnly />
 
               <Input
                 label="Final Amount Payable"
@@ -244,6 +316,14 @@ export default function MembershipPayment() {
                 value={finalAmountPayable}
                 onChange={(event) => setFinalAmountPayable(event.target.value)}
               />
+
+              {calculations.paidSoFar > 0 && calculations.outstandingBeforePayment > 0 && (
+                <Input
+                  label="Previous Amount Paid"
+                  value={money(calculations.paidSoFar)}
+                  readOnly
+                />
+              )}
 
               <Input
                 label="Amount Paid Today"
@@ -259,6 +339,31 @@ export default function MembershipPayment() {
                 value={money(calculations.outstandingBalance)}
                 readOnly
               />
+
+              {calculations.outstandingBeforePayment > 0 ? (
+                <div className="md:col-span-2 rounded border border-border-light bg-bg-secondary/20 px-3 py-2 text-sm text-text-secondary">
+                  Pending Before This Payment: <span className="text-text-primary font-semibold">{money(calculations.outstandingBeforePayment)}</span>
+                  <span className="ml-2">| Enter only current collection in Amount Paid Today. System adds it to previous paid.</span>
+                </div>
+              ) : (
+                <div className="md:col-span-2 rounded border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+                  Settled in Full: No pending due for this subscription.
+                </div>
+              )}
+
+              {calculations.outstandingBeforePayment > 0 && (
+                <div className="md:col-span-2 flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setAmountPaidToday(toAmountInput(calculations.outstandingBeforePayment))}
+                    disabled={isSaving}
+                  >
+                    Settle Full Pending
+                  </Button>
+                </div>
+              )}
 
               <Input
                 label="Counsellor (Optional)"
@@ -301,25 +406,20 @@ export default function MembershipPayment() {
 
             <div className="mt-5 flex gap-3">
               <Button onClick={handleSavePayment} isLoading={isSaving}>Save Payment</Button>
-              {savedInvoice && (
+              {latestInvoice && (
                 <Button variant="secondary" onClick={handleDownloadInvoice} isLoading={isDownloading}>
                   Download Invoice
                 </Button>
               )}
+              <Button variant="secondary" onClick={() => navigate('/admin/members')}>
+                Back to Members
+              </Button>
             </div>
           </Card>
 
           <Card className="p-5">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Live Calculation</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Discount Amount</span>
-                <span className="text-text-primary">{money(calculations.discountAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Discount Percentage</span>
-                <span className="text-text-primary">{calculations.discountPercentage.toFixed(2)}%</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Taxable Amount</span>
                 <span className="text-text-primary">{money(calculations.taxableAmount)}</span>
@@ -336,36 +436,42 @@ export default function MembershipPayment() {
                 <span className="text-text-secondary">Amount Paid Today</span>
                 <span className="text-text-primary">{money(calculations.safePaidToday)}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Paid Before This Payment</span>
+                <span className="text-text-primary">{money(calculations.paidSoFar)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Total Paid After This Payment</span>
+                <span className="text-text-primary">{money(calculations.totalPaidAfterPayment)}</span>
+              </div>
               <div className="flex justify-between font-semibold">
                 <span className="text-text-primary">Outstanding Balance</span>
                 <span className="text-primary">{money(calculations.outstandingBalance)}</span>
               </div>
             </div>
 
-            {savedInvoice && (
+            {latestInvoice && (
               <div className="mt-5">
                 <MembershipInvoiceCard
-                  invoiceNumber={savedInvoice.invoice_number}
-                  memberName={savedInvoice.member_name}
-                  memberId={String(savedInvoice.member_id)}
-                  planLabel={savedInvoice.plan_label}
+                  invoiceNumber={latestInvoice.invoice_number}
+                  memberName={latestInvoice.member_name}
+                  memberId={String(latestInvoice.member_id)}
+                  planLabel={formatMembershipPlanName(latestInvoice.plan_label)}
                   durationLabel={subscription.duration_label}
                   startDate={formatDate(subscription.start_date)}
                   expiryDate={formatDate(subscription.end_date)}
-                  originalPrice={savedInvoice.original_price ?? originalPrice}
-                  discountAmount={savedInvoice.discount_amount ?? 0}
-                  taxableAmount={(savedInvoice.final_amount_received ?? calculations.safeFinal) - (savedInvoice.gst_amount ?? calculations.gstAmount)}
-                  gstAmount={savedInvoice.gst_amount ?? calculations.gstAmount}
-                  finalAmountPayable={savedInvoice.final_amount_received ?? calculations.safeFinal}
-                  amountPaidToday={savedInvoice.amount_paid_today ?? calculations.safePaidToday}
-                  outstandingBalance={savedInvoice.outstanding_balance ?? calculations.outstandingBalance}
-                  paymentMode={(savedInvoice.payment_mode || paymentMode).replace('_', ' ').toUpperCase()}
-                  transactionReference={savedInvoice.transaction_reference}
-                  paymentDate={savedInvoice.payment_date || paymentDate}
-                  notes={savedInvoice.notes}
-                  status={savedInvoice.status}
+                  taxableAmount={(latestInvoice.final_amount_received ?? calculations.safeFinal) - (latestInvoice.gst_amount ?? calculations.gstAmount)}
+                  gstAmount={latestInvoice.gst_amount ?? calculations.gstAmount}
+                  finalAmountPayable={latestInvoice.final_amount_received ?? calculations.safeFinal}
+                  amountPaidToday={latestInvoice.amount_paid_today ?? calculations.safePaidToday}
+                  outstandingBalance={latestInvoice.outstanding_balance ?? calculations.outstandingBalance}
+                  paymentMode={(latestInvoice.payment_mode || paymentMode).replace('_', ' ').toUpperCase()}
+                  transactionReference={latestInvoice.transaction_reference}
+                  paymentDate={latestInvoice.payment_date || paymentDate}
+                  notes={latestInvoice.notes}
+                  status={latestInvoice.status}
                   createdBy="System"
-                  counsellor={savedInvoice.counsellor || counsellor}
+                  counsellor={latestInvoice.counsellor || counsellor}
                   showDownload
                   onDownloadInvoice={handleDownloadInvoice}
                   downloading={isDownloading}

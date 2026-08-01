@@ -183,12 +183,31 @@ body {
      TABLE STYLES
      ============================================================ */
 
+  .table-shell {
+    @apply w-full;
+  }
+
+  .table-top-scrollbar {
+    @apply mb-2 w-full overflow-x-auto overscroll-x-contain scroll-smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
+  }
+
+  .table-top-scrollbar-spacer {
+    height: 1px;
+  }
+
   .table-wrapper {
-    @apply w-full overflow-x-auto;
+    @apply w-full overflow-x-auto overscroll-x-contain scroll-smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
   }
 
   .table {
-    @apply w-full;
+    @apply min-w-full;
+    width: max-content;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
   .table-header {
@@ -196,7 +215,11 @@ body {
   }
 
   .table-header-cell {
-    @apply px-6 py-3 text-left label text-text-secondary;
+    @apply px-6 py-3 text-left label text-text-secondary bg-bg-secondary whitespace-nowrap;
+  }
+
+  .table-sticky-header {
+    @apply sticky top-0;
   }
 
   .table-body-row {
@@ -204,7 +227,24 @@ body {
   }
 
   .table-body-cell {
-    @apply px-6 py-4 text-body;
+    @apply px-6 py-4 text-body bg-bg-card whitespace-nowrap;
+  }
+
+  .table-sticky-column {
+    position: sticky;
+    background-color: #1A1A1D;
+  }
+
+  .table-header-cell.table-sticky-column {
+    background-color: #151518;
+  }
+
+  .table-body-row:hover .table-sticky-column {
+    background-color: #151518;
+  }
+
+  .table-sticky-boundary {
+    box-shadow: 12px 0 18px -16px rgba(0, 0, 0, 0.85);
   }
 
   /* ============================================================

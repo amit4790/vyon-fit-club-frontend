@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } f
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { InvoiceRecord, MemberRecord, SubscriptionRecord } from '../../types'
-import { formatCurrency } from '../../utils/format'
+import { formatCurrency, formatMembershipPlanName } from '../../utils/format'
 
 function formatDate(value: string | null | undefined): string {
   if (!value) {
@@ -122,7 +122,7 @@ export default function AdminMemberDetails() {
                 <TableBody>
                   {subscriptions.map((subscription) => (
                     <TableRow key={subscription.id}>
-                      <TableCell>{subscription.plan_label}</TableCell>
+                      <TableCell>{formatMembershipPlanName(subscription.plan_label)}</TableCell>
                       <TableCell>{subscription.duration_label}</TableCell>
                       <TableCell>{formatDate(subscription.start_date)}</TableCell>
                       <TableCell>{formatDate(subscription.end_date)}</TableCell>

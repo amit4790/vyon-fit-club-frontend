@@ -19,6 +19,15 @@ export function formatPlanDurationSuffix(durationLabel: string): string {
   return `/ ${durationLabel.trim()}`
 }
 
+export function formatMembershipPlanName(planLabel: string | null | undefined): string {
+  if (!planLabel) {
+    return ''
+  }
+
+  // Strip trailing duration labels like " - 3 Months" while preserving named variants like " - Prime".
+  return planLabel.replace(/\s*-\s*\d+\s*(day|days|month|months|year|years)\s*$/i, '').trim()
+}
+
 export function toTitleCase(value: string): string {
   return value
     .trim()
