@@ -134,6 +134,24 @@ type MemberMembershipSnapshot = {
   subscription: SubscriptionRecord | null
 }
 
+function deriveInvoiceAmounts(invoice: InvoiceRecord, fallbackFinalAmount: number) {
+  const finalAmount = Number(invoice.final_amount_received ?? fallbackFinalAmount ?? 0)
+  const totalPaid = invoice.total_paid != null
+    ? Number(invoice.total_paid)
+    : invoice.amount_paid_today != null
+      ? Number(invoice.amount_paid_today)
+      : 0
+  const outstandingBalance = invoice.outstanding_balance != null
+    ? Number(invoice.outstanding_balance)
+    : Math.max(finalAmount - totalPaid, 0)
+
+  return {
+    finalAmount,
+    totalPaid,
+    outstandingBalance,
+  }
+}
+
 export default function AdminMembers() {
   const todayIso = new Date().toISOString().slice(0, 10)
   const navigate = useNavigate()
@@ -177,6 +195,7 @@ export default function AdminMembers() {
   const [viewMembershipMember, setViewMembershipMember] = useState<MemberRecord | null>(null)
   const [viewMembershipSubscription, setViewMembershipSubscription] = useState<SubscriptionRecord | null>(null)
   const [viewMembershipInvoice, setViewMembershipInvoice] = useState<InvoiceRecord | null>(null)
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false)
   const [memberForm, setMemberForm] = useState<MemberFormState>(DEFAULT_MEMBER_FORM)
   const [memberFormError, setMemberFormError] = useState<string | null>(null)
   const { toasts, removeToast, success, error: errorToast } = useToast()
@@ -365,13 +384,41 @@ export default function AdminMembers() {
 
           if (activeSubscription) {
             const paymentStatus = (activeSubscription.payment_status || '').trim().toLowerCase()
+            let effectivePaymentStatus = paymentStatus
+
+            if (effectivePaymentStatus !== 'paid' && effectivePaymentStatus !== 'partial') {
+              try {
+                const invoicesResponse = await adminService.getInvoices({
+                  page: 1,
+                  pageSize: 50,
+                  memberId: member.id,
+                })
+                const linkedInvoice = invoicesResponse.data
+                  .filter((invoice) => invoice.subscription_id === activeSubscription.id)
+                  .sort((a, b) => new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime())[0]
+
+                if (linkedInvoice) {
+                  const derived = deriveInvoiceAmounts(linkedInvoice, activeSubscription.total_amount)
+                  if (derived.outstandingBalance <= 0 || linkedInvoice.status === 'paid') {
+                    effectivePaymentStatus = 'paid'
+                  } else if (derived.totalPaid > 0) {
+                    effectivePaymentStatus = 'partial'
+                  } else {
+                    effectivePaymentStatus = 'pending'
+                  }
+                }
+              } catch {
+                // Keep subscription payment status when invoice lookup fails.
+              }
+            }
+
             let membershipStatus: MembershipDisplayStatus = 'inactive_unpaid'
             let action: MembershipActionType = 'pay'
 
-            if (paymentStatus === 'paid') {
+            if (effectivePaymentStatus === 'paid') {
               membershipStatus = 'active_paid'
               action = 'view'
-            } else if (paymentStatus === 'partial') {
+            } else if (effectivePaymentStatus === 'partial') {
               membershipStatus = 'active_pending_payment'
               action = 'pay'
             }
@@ -686,6 +733,30 @@ export default function AdminMembers() {
       setSubscriptionFormError(apiError.message)
     } finally {
       setIsSubmittingSubscription(false)
+    }
+  }
+
+  const handleDownloadInvoice = async () => {
+    if (!viewMembershipInvoice) {
+      return
+    }
+
+    try {
+      setIsDownloadingInvoice(true)
+      const blob = await adminService.downloadInvoicePdf(viewMembershipInvoice.id)
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${viewMembershipInvoice.invoice_number || `invoice-${viewMembershipInvoice.id}`}.pdf`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Unable to download invoice', apiError.message)
+    } finally {
+      setIsDownloadingInvoice(false)
     }
   }
 
@@ -1157,6 +1228,16 @@ export default function AdminMembers() {
         size="lg"
         footer={
           <div className="flex flex-wrap justify-end gap-3">
+            {viewMembershipInvoice && (
+              <Button
+                variant="secondary"
+                onClick={handleDownloadInvoice}
+                isLoading={isDownloadingInvoice}
+                disabled={isDownloadingInvoice}
+              >
+                Download Invoice
+              </Button>
+            )}
             {viewMembershipSubscription && viewMembershipOutstandingBalance > 0 && (
               <Button
                 onClick={() => {
