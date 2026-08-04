@@ -83,7 +83,7 @@ export default function AdminMemberDetails() {
   return (
     <AdminShell
       title="Member Details"
-      subtitle="Read-only member profile, membership, payments and invoices"
+      subtitle="Member profile and concurrent memberships"
       userName={userName}
       onLogout={handleLogout}
     >
@@ -107,7 +107,7 @@ export default function AdminMemberDetails() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-lg font-semibold text-text-secondary mb-3">Membership</h2>
+            <h2 className="text-lg font-semibold text-text-secondary mb-3">Memberships</h2>
             {subscriptions.length === 0 ? (
               <p className="text-sm text-text-secondary">No memberships found.</p>
             ) : (
@@ -118,6 +118,7 @@ export default function AdminMemberDetails() {
                   <TableHeaderCell>Start</TableHeaderCell>
                   <TableHeaderCell>End</TableHeaderCell>
                   <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Payment</TableHeaderCell>
                 </TableHeader>
                 <TableBody>
                   {subscriptions.map((subscription) => (
@@ -127,6 +128,7 @@ export default function AdminMemberDetails() {
                       <TableCell>{formatDate(subscription.start_date)}</TableCell>
                       <TableCell>{formatDate(subscription.end_date)}</TableCell>
                       <TableCell>{subscription.status}</TableCell>
+                      <TableCell>{subscription.payment_status}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
