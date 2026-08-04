@@ -110,6 +110,13 @@ export interface AssignSubscriptionPayload {
   duration_unit?: SubscriptionDurationUnit
 }
 
+export interface ChangeSubscriptionPlanPayload {
+  plan_id: number
+  start_date?: string
+  duration_value?: number
+  duration_unit?: SubscriptionDurationUnit
+}
+
 export interface TrainerRecord {
   id: number
   full_name: string
