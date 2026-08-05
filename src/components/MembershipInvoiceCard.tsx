@@ -10,6 +10,8 @@ interface MembershipInvoiceCardProps {
   durationLabel: string
   startDate: string
   expiryDate: string
+  originalPrice?: number
+  discountAmount?: number
   taxableAmount: number
   gstAmount: number
   finalAmountPayable: number
@@ -82,6 +84,8 @@ export default function MembershipInvoiceCard({
   durationLabel,
   startDate,
   expiryDate,
+  originalPrice,
+  discountAmount,
   taxableAmount,
   gstAmount,
   finalAmountPayable,
@@ -100,6 +104,11 @@ export default function MembershipInvoiceCard({
 }: MembershipInvoiceCardProps) {
   const safeTaxableAmount = Number.isFinite(taxableAmount) ? taxableAmount : 0
   const safeFinalAmountPayable = Number.isFinite(finalAmountPayable) ? finalAmountPayable : 0
+  const safeOriginalPrice = Number.isFinite(originalPrice) ? Number(originalPrice) : safeFinalAmountPayable
+  const safeDiscount = Math.max(
+    Number.isFinite(discountAmount) ? Number(discountAmount) : Math.max(safeOriginalPrice - safeFinalAmountPayable, 0),
+    0,
+  )
   const safeAmountPaid = Number.isFinite(amountPaidToday) ? amountPaidToday : 0
   const safeBalance = Math.max(Number.isFinite(outstandingBalance) ? outstandingBalance : 0, 0)
   const splitGst = Number.isFinite(gstAmount) ? gstAmount / 2 : 0
@@ -123,7 +132,8 @@ export default function MembershipInvoiceCard({
       amount: safeFinalAmountPayable,
     },
     paymentSummary: {
-      discount: 0,
+      originalPrice: safeOriginalPrice,
+      discount: safeDiscount,
       taxableAmount: safeTaxableAmount,
       paymentMode,
       finalAmountPayable: safeFinalAmountPayable,
