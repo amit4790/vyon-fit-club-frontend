@@ -65,6 +65,7 @@ export default function MembershipPayment() {
   const [previousAmountPaid, setPreviousAmountPaid] = useState(0)
 
   const [finalAmountPayable, setFinalAmountPayable] = useState<string>('')
+  const [originalMembershipPrice, setOriginalMembershipPrice] = useState<string>('')
   const [amountPaidToday, setAmountPaidToday] = useState<string>('')
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash')
   const [transactionReference, setTransactionReference] = useState('')
@@ -126,6 +127,8 @@ export default function MembershipPayment() {
         if (linkedInvoices.length === 0) {
           setExistingInvoice(null)
           setPreviousAmountPaid(0)
+          const defaultPlanPrice = Number(subscription.total_amount || subscription.base_price || 0)
+          setOriginalMembershipPrice(defaultPlanPrice > 0 ? String(defaultPlanPrice) : '')
           setFinalAmountPayable(String(subscription.total_amount || ''))
           setAmountPaidToday('')
           return
@@ -139,6 +142,10 @@ export default function MembershipPayment() {
 
         setExistingInvoice(latestLinkedInvoice)
 
+        const defaultPlanPrice = Number(subscription.total_amount || subscription.base_price || 0)
+        const originalFromInvoice = latestLinkedInvoice.original_price != null
+          ? Number(latestLinkedInvoice.original_price)
+          : defaultPlanPrice
         const finalFromInvoice = Number(latestLinkedInvoice.final_amount_received ?? subscription.total_amount ?? 0)
         const paidSoFarFromInvoice = latestLinkedInvoice.total_paid != null
           ? Number(latestLinkedInvoice.total_paid)
@@ -151,11 +158,14 @@ export default function MembershipPayment() {
         const safePreviousPaid = Math.max(Math.min(paidSoFarFromInvoice, finalFromInvoice), 0)
 
         setPreviousAmountPaid(safePreviousPaid)
+        setOriginalMembershipPrice(originalFromInvoice > 0 ? String(originalFromInvoice) : (defaultPlanPrice > 0 ? String(defaultPlanPrice) : ''))
         setFinalAmountPayable(String(finalFromInvoice > 0 ? finalFromInvoice : subscription.total_amount || ''))
         setAmountPaidToday(outstandingFromInvoice > 0 ? toAmountInput(outstandingFromInvoice) : '')
       } catch {
         setExistingInvoice(null)
         setPreviousAmountPaid(0)
+        const defaultPlanPrice = Number(subscription.total_amount || subscription.base_price || 0)
+        setOriginalMembershipPrice(defaultPlanPrice > 0 ? String(defaultPlanPrice) : '')
         setFinalAmountPayable(String(subscription.total_amount || ''))
       }
     }
@@ -164,14 +174,17 @@ export default function MembershipPayment() {
   }, [subscription])
 
   const finalAmount = Number(finalAmountPayable || '0')
+  const originalPrice = Number(originalMembershipPrice || '0')
   const paidToday = Number(amountPaidToday || '0')
   const latestInvoice = savedInvoice || existingInvoice
 
   const calculations = useMemo(() => {
     const safeFinal = Number.isFinite(finalAmount) && finalAmount > 0 ? finalAmount : 0
+    const safeOriginal = Number.isFinite(originalPrice) && originalPrice >= 0 ? originalPrice : 0
     const safePaidToday = Number.isFinite(paidToday) && paidToday > 0 ? paidToday : 0
     const paidSoFar = Math.max(Math.min(previousAmountPaid, safeFinal), 0)
     const outstandingBeforePayment = Math.max(safeFinal - paidSoFar, 0)
+    const discountAmount = Math.max(safeOriginal - safeFinal, 0)
     const taxableAmount = safeFinal > 0 ? safeFinal / 1.05 : 0
     const gstAmount = Math.max(safeFinal - taxableAmount, 0)
     const outstandingBalance = Math.max(outstandingBeforePayment - safePaidToday, 0)
@@ -179,18 +192,25 @@ export default function MembershipPayment() {
 
     return {
       safeFinal,
+      safeOriginal,
       safePaidToday,
       paidSoFar,
       outstandingBeforePayment,
+      discountAmount,
       totalPaidAfterPayment,
       taxableAmount,
       gstAmount,
       outstandingBalance,
     }
-  }, [finalAmount, paidToday, previousAmountPaid])
+  }, [finalAmount, originalPrice, paidToday, previousAmountPaid])
 
   const handleSavePayment = async () => {
     if (!subscription) {
+      return
+    }
+
+    if (!Number.isFinite(originalPrice) || originalPrice < 0) {
+      setFormError('Original Membership Price cannot be less than zero.')
       return
     }
 
@@ -219,6 +239,7 @@ export default function MembershipPayment() {
       setFormError(null)
 
       const response = await adminService.captureSubscriptionPayment(subscription.id, {
+        original_price: calculations.safeOriginal,
         final_amount_received: calculations.safeFinal,
         amount_paid_today: calculations.totalPaidAfterPayment,
         payment_mode: paymentMode,
@@ -231,6 +252,7 @@ export default function MembershipPayment() {
       setSavedInvoice(response.data)
       success('Payment saved', `Invoice ${response.data.invoice_number || `#${response.data.id}`} generated.`)
       setExistingInvoice(response.data)
+      const nextOriginal = Number(response.data.original_price ?? calculations.safeOriginal)
       const nextFinal = Number(response.data.final_amount_received ?? calculations.safeFinal)
       const nextPaid = response.data.total_paid != null
         ? Number(response.data.total_paid)
@@ -239,6 +261,7 @@ export default function MembershipPayment() {
           : calculations.totalPaidAfterPayment
       const nextOutstanding = Number(response.data.outstanding_balance ?? 0)
       setPreviousAmountPaid(Math.max(Math.min(nextPaid, nextFinal), 0))
+      setOriginalMembershipPrice(String(nextOriginal >= 0 ? nextOriginal : calculations.safeOriginal))
       setFinalAmountPayable(String(nextFinal))
       setAmountPaidToday(nextOutstanding > 0 ? toAmountInput(nextOutstanding) : '')
     } catch (err: any) {
@@ -309,12 +332,27 @@ export default function MembershipPayment() {
               <Input label="Membership Expiry Date" value={formatDate(subscription.end_date)} readOnly />
 
               <Input
+                label="Original Membership Price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={originalMembershipPrice}
+                onChange={(event) => setOriginalMembershipPrice(event.target.value)}
+              />
+
+              <Input
                 label="Final Amount Payable"
                 type="number"
                 min="0"
                 step="0.01"
                 value={finalAmountPayable}
                 onChange={(event) => setFinalAmountPayable(event.target.value)}
+              />
+
+              <Input
+                label="Discount"
+                value={money(calculations.discountAmount)}
+                readOnly
               />
 
               {calculations.paidSoFar > 0 && calculations.outstandingBeforePayment > 0 && (
@@ -421,6 +459,14 @@ export default function MembershipPayment() {
             <h2 className="text-lg font-semibold text-text-primary mb-4">Live Calculation</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
+                <span className="text-text-secondary">Original Membership Price</span>
+                <span className="text-text-primary">{money(calculations.safeOriginal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Discount</span>
+                <span className="text-text-primary">{money(calculations.discountAmount)}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-text-secondary">Taxable Amount</span>
                 <span className="text-text-primary">{money(calculations.taxableAmount)}</span>
               </div>
@@ -460,6 +506,8 @@ export default function MembershipPayment() {
                   durationLabel={subscription.duration_label}
                   startDate={formatDate(subscription.start_date)}
                   expiryDate={formatDate(subscription.end_date)}
+                  originalPrice={latestInvoice.original_price ?? calculations.safeOriginal}
+                  discountAmount={Math.max(Number(latestInvoice.discount_amount ?? calculations.discountAmount), 0)}
                   taxableAmount={(latestInvoice.final_amount_received ?? calculations.safeFinal) - (latestInvoice.gst_amount ?? calculations.gstAmount)}
                   gstAmount={latestInvoice.gst_amount ?? calculations.gstAmount}
                   finalAmountPayable={latestInvoice.final_amount_received ?? calculations.safeFinal}

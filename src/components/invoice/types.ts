@@ -24,6 +24,7 @@ export interface MembershipLineItem {
 }
 
 export interface InvoicePaymentSummary {
+  originalPrice: number
   discount: number
   taxableAmount: number
   paymentMode: string

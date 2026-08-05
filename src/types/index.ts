@@ -334,6 +334,7 @@ export interface InvoiceOperationApiResponse {
 export interface CapturePaymentPayload {
   final_amount_received: number
   amount_paid_today: number
+  original_price?: number | null
   payment_mode: PaymentMode
   transaction_reference?: string | null
   payment_date: string

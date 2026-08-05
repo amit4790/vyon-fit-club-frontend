@@ -18,6 +18,14 @@ export function PaymentSummary({ invoice }: PaymentSummaryProps) {
           <table className="w-full border-collapse text-sm">
             <tbody>
               <tr>
+                <td className="border-b border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Original Membership Price</td>
+                <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.originalPrice)}</td>
+              </tr>
+              <tr>
+                <td className="border-b border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Discount</td>
+                <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(Math.max(summary.discount, 0))}</td>
+              </tr>
+              <tr>
                 <td className="border-b border-r border-border-light px-3 py-2 font-semibold text-black print:border-zinc-800">Taxable Amount</td>
                 <td className="border-b border-border-light px-3 py-2 text-right text-black print:border-zinc-800">INR {formatMoney(summary.taxableAmount)}</td>
               </tr>
