@@ -206,6 +206,10 @@ export default function AdminMembers() {
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false)
   const [memberForm, setMemberForm] = useState<MemberFormState>(DEFAULT_MEMBER_FORM)
   const [memberFormError, setMemberFormError] = useState<string | null>(null)
+  const [activeDeviceSn, setActiveDeviceSn] = useState<string | null>(null)
+  const [syncingMemberId, setSyncingMemberId] = useState<number | null>(null)
+  const [isResyncModalOpen, setIsResyncModalOpen] = useState(false)
+  const [isResyncingDevices, setIsResyncingDevices] = useState(false)
   const { toasts, removeToast, success, error: errorToast } = useToast()
 
   const assignablePlans = useMemo(() => {
@@ -321,6 +325,7 @@ export default function AdminMembers() {
     setActiveSearch(querySearch)
     loadMembers(pageParam, querySearch, true)
     loadExpiringSubscriptions(expiringDays)
+    void loadActivePushDevice()
   }, [navigate])
 
   useEffect(() => {
@@ -698,6 +703,65 @@ export default function AdminMembers() {
     }
   }
 
+  const loadActivePushDevice = async () => {
+    try {
+      const response = await adminService.getPushDevices()
+      const activeDevices = (response.devices || []).filter((device) => device.is_active)
+      setActiveDeviceSn(activeDevices[0]?.serial_number ?? null)
+    } catch {
+      setActiveDeviceSn(null)
+    }
+  }
+
+  const resolveDeviceSnOrToast = () => {
+    if (!activeDeviceSn) {
+      errorToast('No device registered', 'Connect a PUSH device before syncing members.')
+      return null
+    }
+    return activeDeviceSn
+  }
+
+  const handleSyncMemberToDevice = async (member: MemberRecord) => {
+    const deviceSn = resolveDeviceSnOrToast()
+    if (!deviceSn) {
+      return
+    }
+
+    setSyncingMemberId(member.id)
+    try {
+      await adminService.syncMemberToDevice(deviceSn, member.id)
+      success('Member sync queued', `Queued for device ${deviceSn}`)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Failed to sync member', apiError.message)
+    } finally {
+      setSyncingMemberId(null)
+    }
+  }
+
+  const handleConfirmResyncDevices = async () => {
+    const deviceSn = resolveDeviceSnOrToast()
+    if (!deviceSn) {
+      return
+    }
+
+    setIsResyncingDevices(true)
+    try {
+      const response = await adminService.resyncAllMembersToDevice(deviceSn)
+      setIsResyncModalOpen(false)
+      const membersCount = response.members_synced ?? response.queued_commands
+      success(
+        'Device re-sync queued',
+        `${membersCount} member command(s) queued for ${deviceSn}`
+      )
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Failed to re-sync devices', apiError.message)
+    } finally {
+      setIsResyncingDevices(false)
+    }
+  }
+
   const handleDeleteMember = async (member: MemberRecord) => {
     const confirmed = window.confirm(
       `Delete member ${member.full_name}? This will permanently remove all their memberships and invoices.`
@@ -988,6 +1052,16 @@ export default function AdminMembers() {
 
           <div className="flex items-center gap-2">
             {isSuperAdmin && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={isResyncingDevices}
+                onClick={() => setIsResyncModalOpen(true)}
+              >
+                Re-sync Devices
+              </Button>
+            )}
+            {isSuperAdmin && (
               <Button size="sm" variant="secondary" onClick={() => navigate('/admin/admins')}>
                 Add Admin
               </Button>
@@ -1127,6 +1201,17 @@ export default function AdminMembers() {
                         </Button>
                         <Button
                           size="sm"
+                          variant="secondary"
+                          disabled={syncingMemberId === member.id}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            void handleSyncMemberToDevice(member)
+                          }}
+                        >
+                          {syncingMemberId === member.id ? 'Syncing…' : 'Sync'}
+                        </Button>
+                        <Button
+                          size="sm"
                           onClick={(event) => {
                             event.stopPropagation()
                             if (membership.action === 'pay') {
@@ -1195,6 +1280,42 @@ export default function AdminMembers() {
           </>
         )}
       </Card>
+
+      <Modal
+        isOpen={isResyncModalOpen}
+        onClose={() => {
+          if (!isResyncingDevices) {
+            setIsResyncModalOpen(false)
+          }
+        }}
+        title="Re-sync Devices"
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={isResyncingDevices}
+              onClick={() => setIsResyncModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button disabled={isResyncingDevices} onClick={() => void handleConfirmResyncDevices()}>
+              {isResyncingDevices ? 'Queuing…' : 'Confirm Re-sync'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-secondary">
+          Re-sync all active members to device hardware
+          {activeDeviceSn ? (
+            <>
+              {' '}
+              <span className="text-text-primary font-medium">{activeDeviceSn}</span>
+            </>
+          ) : null}
+          ?
+        </p>
+      </Modal>
 
       <Modal
         isOpen={isMemberModalOpen}

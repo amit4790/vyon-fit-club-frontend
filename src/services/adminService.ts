@@ -29,6 +29,8 @@ import {
   ReportsSummaryApiResponse,
   AdminProfileApiResponse,
   TrainerDetailApiResponse,
+  PushDeviceListApiResponse,
+  DeviceSyncApiResponse,
 } from '../types'
 
 export const adminService = {
@@ -145,4 +147,12 @@ export const adminService = {
   getReportsSummary: () => httpClient.get<ReportsSummaryApiResponse>('/admin/reports/summary'),
 
   getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
+
+  getPushDevices: () => httpClient.get<PushDeviceListApiResponse>('/device/devices'),
+
+  syncMemberToDevice: (deviceSn: string, userId: number) =>
+    httpClient.post<DeviceSyncApiResponse>(`/device/${encodeURIComponent(deviceSn)}/sync-user/${userId}`),
+
+  resyncAllMembersToDevice: (deviceSn: string) =>
+    httpClient.post<DeviceSyncApiResponse>(`/device/${encodeURIComponent(deviceSn)}/resync`),
 }

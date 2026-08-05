@@ -367,3 +367,23 @@ export interface ApiResponse<T = any> {
   data: T
   status?: 'success' | 'error'
 }
+
+export interface PushDeviceRecord {
+  id: number
+  serial_number: string
+  device_name?: string | null
+  is_active: boolean
+  last_seen?: string | null
+}
+
+export interface PushDeviceListApiResponse {
+  devices: PushDeviceRecord[]
+}
+
+export interface DeviceSyncApiResponse {
+  status: string
+  device_sn: string
+  queued_commands: number
+  members_synced?: number
+  user_id?: number
+}
