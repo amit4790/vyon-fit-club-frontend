@@ -98,6 +98,7 @@ export default function AdminMemberDetails() {
           <Card className="p-5">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Profile</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <p><span className="text-text-secondary">Member ID:</span> {member.id}</p>
               <p><span className="text-text-secondary">Name:</span> {member.full_name}</p>
               <p><span className="text-text-secondary">Mobile:</span> {member.mobile_number}</p>
               <p><span className="text-text-secondary">Email:</span> {member.email || '-'}</p>

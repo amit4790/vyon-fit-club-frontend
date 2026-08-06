@@ -154,5 +154,9 @@ export const adminService = {
     httpClient.post<DeviceSyncApiResponse>(`/device/${encodeURIComponent(deviceSn)}/sync-user/${userId}`),
 
   resyncAllMembersToDevice: (deviceSn: string) =>
-    httpClient.post<DeviceSyncApiResponse>(`/device/${encodeURIComponent(deviceSn)}/resync`),
+    httpClient.post<DeviceSyncApiResponse>(
+      `/device/${encodeURIComponent(deviceSn)}/resync`,
+      undefined,
+      { timeout: 120000 }
+    ),
 }

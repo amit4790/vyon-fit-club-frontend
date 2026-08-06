@@ -30,6 +30,8 @@ export interface MemberRecord {
   emergency_contact?: string | null
   emergency_phone?: string | null
   notes?: string | null
+  device_sync_status?: string | null
+  last_device_sync_at?: string | null
   current_plan_label?: string | null
   membership_status?: 'active' | 'expired' | 'none'
   membership_expiry_date?: string | null

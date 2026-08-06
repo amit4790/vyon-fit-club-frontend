@@ -210,6 +210,7 @@ export default function AdminMembers() {
   const [syncingMemberId, setSyncingMemberId] = useState<number | null>(null)
   const [isResyncModalOpen, setIsResyncModalOpen] = useState(false)
   const [isResyncingDevices, setIsResyncingDevices] = useState(false)
+  const [resyncError, setResyncError] = useState<string | null>(null)
   const { toasts, removeToast, success, error: errorToast } = useToast()
 
   const assignablePlans = useMemo(() => {
@@ -721,6 +722,9 @@ export default function AdminMembers() {
     return activeDeviceSn
   }
 
+  const isMemberDeviceSynced = (member: MemberRecord) =>
+    (member.device_sync_status || '').toLowerCase() === 'synced'
+
   const handleSyncMemberToDevice = async (member: MemberRecord) => {
     const deviceSn = resolveDeviceSnOrToast()
     if (!deviceSn) {
@@ -730,7 +734,18 @@ export default function AdminMembers() {
     setSyncingMemberId(member.id)
     try {
       await adminService.syncMemberToDevice(deviceSn, member.id)
-      success('Member sync queued', `Queued for device ${deviceSn}`)
+      success('Member sync complete', `${member.full_name} queued for device ${deviceSn}`)
+      setMembers((prev) =>
+        prev.map((row) =>
+          row.id === member.id
+            ? {
+                ...row,
+                device_sync_status: 'synced',
+                last_device_sync_at: new Date().toISOString(),
+              }
+            : row
+        )
+      )
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
       errorToast('Failed to sync member', apiError.message)
@@ -745,17 +760,27 @@ export default function AdminMembers() {
       return
     }
 
+    setResyncError(null)
     setIsResyncingDevices(true)
     try {
       const response = await adminService.resyncAllMembersToDevice(deviceSn)
       setIsResyncModalOpen(false)
       const membersCount = response.members_synced ?? response.queued_commands
       success(
-        'Device re-sync queued',
-        `${membersCount} member command(s) queued for ${deviceSn}`
+        'Device re-sync complete',
+        `${membersCount} member(s) queued for ${deviceSn}`
       )
+      setMembers((prev) =>
+        prev.map((row) => ({
+          ...row,
+          device_sync_status: 'synced',
+          last_device_sync_at: new Date().toISOString(),
+        }))
+      )
+      await loadMembers(memberPage, activeSearch, false)
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
+      setResyncError(apiError.message)
       errorToast('Failed to re-sync devices', apiError.message)
     } finally {
       setIsResyncingDevices(false)
@@ -1056,7 +1081,10 @@ export default function AdminMembers() {
                 size="sm"
                 variant="secondary"
                 disabled={isResyncingDevices}
-                onClick={() => setIsResyncModalOpen(true)}
+                onClick={() => {
+                  setResyncError(null)
+                  setIsResyncModalOpen(true)
+                }}
               >
                 Re-sync Devices
               </Button>
@@ -1127,10 +1155,11 @@ export default function AdminMembers() {
           <>
             <Table>
               <TableHeader>
-                <TableHeaderCell>Member Name</TableHeaderCell>
+                <TableHeaderCell>Member</TableHeaderCell>
                 <TableHeaderCell>Mobile Number</TableHeaderCell>
                 <TableHeaderCell>Membership</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Device</TableHeaderCell>
                 <TableHeaderCell className="text-right">Actions</TableHeaderCell>
               </TableHeader>
               <TableBody>
@@ -1151,7 +1180,12 @@ export default function AdminMembers() {
                     onClick={() => navigate(`/admin/members/${member.id}`)}
                     className="cursor-pointer"
                   >
-                    <TableCell className="max-w-[12rem] truncate text-sm text-text-secondary">{member.full_name}</TableCell>
+                    <TableCell className="max-w-[14rem] text-sm text-text-secondary">
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-text-secondary">ID {member.id}</p>
+                        <p className="truncate text-text-primary">{member.full_name}</p>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
                     <TableCell className="max-w-[16rem] text-sm text-text-secondary">
                       {membership.activeSubscriptions.length > 0 ? (
@@ -1187,6 +1221,17 @@ export default function AdminMembers() {
                         {membershipStatusLabel(membership.membershipStatus)}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                          isMemberDeviceSynced(member)
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-bg-secondary text-text-secondary'
+                        }`}
+                      >
+                        {isMemberDeviceSynced(member) ? 'Synced' : 'Not synced'}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-wrap justify-end gap-2">
                         <Button
@@ -1199,17 +1244,19 @@ export default function AdminMembers() {
                         >
                           Edit
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={syncingMemberId === member.id}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            void handleSyncMemberToDevice(member)
-                          }}
-                        >
-                          {syncingMemberId === member.id ? 'Syncing…' : 'Sync'}
-                        </Button>
+                        {!isMemberDeviceSynced(member) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={syncingMemberId === member.id}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              void handleSyncMemberToDevice(member)
+                            }}
+                          >
+                            {syncingMemberId === member.id ? 'Syncing…' : 'Sync'}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           onClick={(event) => {
@@ -1286,6 +1333,7 @@ export default function AdminMembers() {
         onClose={() => {
           if (!isResyncingDevices) {
             setIsResyncModalOpen(false)
+            setResyncError(null)
           }
         }}
         title="Re-sync Devices"
@@ -1295,26 +1343,44 @@ export default function AdminMembers() {
             <Button
               variant="secondary"
               disabled={isResyncingDevices}
-              onClick={() => setIsResyncModalOpen(false)}
+              onClick={() => {
+                setIsResyncModalOpen(false)
+                setResyncError(null)
+              }}
             >
               Cancel
             </Button>
             <Button disabled={isResyncingDevices} onClick={() => void handleConfirmResyncDevices()}>
-              {isResyncingDevices ? 'Queuing…' : 'Confirm Re-sync'}
+              {isResyncingDevices ? 'Syncing…' : 'Confirm Re-sync'}
             </Button>
           </>
         }
       >
-        <p className="text-sm text-text-secondary">
-          Re-sync all active members to device hardware
-          {activeDeviceSn ? (
-            <>
-              {' '}
-              <span className="text-text-primary font-medium">{activeDeviceSn}</span>
-            </>
-          ) : null}
-          ?
-        </p>
+        {isResyncingDevices ? (
+          <div className="space-y-2">
+            <p className="text-sm text-text-primary font-medium">Syncing members to device…</p>
+            <p className="text-sm text-text-secondary">
+              Queuing commands for{' '}
+              <span className="text-text-primary font-medium">{activeDeviceSn}</span>. Please wait.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-text-secondary">
+              Re-sync all active members to device hardware
+              {activeDeviceSn ? (
+                <>
+                  {' '}
+                  <span className="text-text-primary font-medium">{activeDeviceSn}</span>
+                </>
+              ) : null}
+              ?
+            </p>
+            {resyncError ? (
+              <p className="text-sm text-red-400">{resyncError}</p>
+            ) : null}
+          </div>
+        )}
       </Modal>
 
       <Modal
@@ -1669,6 +1735,10 @@ export default function AdminMembers() {
 
             <div className="rounded-lg border border-border-light bg-bg-secondary/20 p-4">
               <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary">Member ID</p>
+                  <p className="mt-1 text-text-primary">{viewMembershipMember?.id ?? '-'}</p>
+                </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-text-secondary">Member Name</p>
                   <p className="mt-1 text-text-primary">{viewMembershipMember?.full_name || '-'}</p>
