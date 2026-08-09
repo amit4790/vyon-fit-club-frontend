@@ -181,7 +181,9 @@ export interface ReportsSummaryRecord {
   paid_invoices: number
   pending_invoices: number
   collected_revenue: number
-  pending_revenue: number
+  outstanding_revenue: number
+  target_revenue: number
+  revenue_gap: number
   average_invoice_value: number
   expiring_memberships_next_30_days: number
 }

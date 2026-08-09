@@ -146,6 +146,11 @@ export const adminService = {
 
   getReportsSummary: () => httpClient.get<ReportsSummaryApiResponse>('/admin/reports/summary'),
 
+  updateTargetRevenue: (targetRevenue: number) =>
+    httpClient.patch<ReportsSummaryApiResponse>('/admin/reports/target-revenue', {
+      target_revenue: targetRevenue,
+    }),
+
   getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
 
   getPushDevices: () => httpClient.get<PushDeviceListApiResponse>('/device/devices'),

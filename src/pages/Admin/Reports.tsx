@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AuthService } from '../../api/api'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
+import { Input } from '../../components/Input'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { ReportsSummaryRecord } from '../../types'
@@ -13,6 +14,10 @@ export default function AdminReports() {
   const [summary, setSummary] = useState<ReportsSummaryRecord | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [isEditingTarget, setIsEditingTarget] = useState(false)
+  const [targetDraft, setTargetDraft] = useState('')
+  const [isSavingTarget, setIsSavingTarget] = useState(false)
+  const [targetError, setTargetError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -39,6 +44,40 @@ export default function AdminReports() {
       if (showLoader) {
         setIsLoading(false)
       }
+    }
+  }
+
+  const openTargetEditor = () => {
+    if (!summary) {
+      return
+    }
+    setTargetDraft(String(summary.target_revenue ?? 0))
+    setTargetError(null)
+    setIsEditingTarget(true)
+  }
+
+  const cancelTargetEditor = () => {
+    setIsEditingTarget(false)
+    setTargetError(null)
+  }
+
+  const saveTargetRevenue = async () => {
+    const parsed = Number(targetDraft)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setTargetError('Enter a valid target amount of 0 or more.')
+      return
+    }
+
+    setIsSavingTarget(true)
+    setTargetError(null)
+    try {
+      const response = await adminService.updateTargetRevenue(parsed)
+      setSummary(response.data)
+      setIsEditingTarget(false)
+    } catch (err: any) {
+      setTargetError(err?.message || 'Unable to update target revenue.')
+    } finally {
+      setIsSavingTarget(false)
     }
   }
 
@@ -112,9 +151,65 @@ export default function AdminReports() {
           </Card>
 
           <Card className="p-5">
-            <p className="text-xs uppercase tracking-wide text-text-secondary">Pending Revenue</p>
-            <p className="text-2xl font-semibold text-accent mt-2">{formatCurrency(summary.pending_revenue)}</p>
-            <p className="text-sm text-text-secondary mt-1">Total outstanding amount from unpaid invoices.</p>
+            <p className="text-xs uppercase tracking-wide text-text-secondary">Outstanding Revenue</p>
+            <p className="text-2xl font-semibold text-accent mt-2">{formatCurrency(summary.outstanding_revenue)}</p>
+            <p className="text-sm text-text-secondary mt-1">
+              Amount still owed on pending and partial invoices.
+            </p>
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs uppercase tracking-wide text-text-secondary">Target Revenue</p>
+              {!isEditingTarget ? (
+                <Button size="sm" variant="secondary" onClick={openTargetEditor}>
+                  Edit
+                </Button>
+              ) : null}
+            </div>
+
+            {isEditingTarget ? (
+              <div className="mt-3 space-y-3">
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={targetDraft}
+                  onChange={(event) => setTargetDraft(event.target.value)}
+                  placeholder="Enter target revenue"
+                />
+                {targetError ? <p className="text-sm text-red-400">{targetError}</p> : null}
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={isSavingTarget} onClick={() => void saveTargetRevenue()}>
+                    {isSavingTarget ? 'Saving…' : 'Save'}
+                  </Button>
+                  <Button size="sm" variant="secondary" disabled={isSavingTarget} onClick={cancelTargetEditor}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-2xl font-semibold text-primary mt-2">{formatCurrency(summary.target_revenue)}</p>
+                <p className="text-sm text-text-secondary mt-1">Editable collection target for this period.</p>
+              </>
+            )}
+          </Card>
+
+          <Card className="p-5">
+            <p className="text-xs uppercase tracking-wide text-text-secondary">Revenue Gap</p>
+            <p
+              className={`text-2xl font-semibold mt-2 ${
+                summary.revenue_gap > 0
+                  ? 'text-accent'
+                  : summary.revenue_gap < 0
+                    ? 'text-success'
+                    : 'text-primary'
+              }`}
+            >
+              {formatCurrency(summary.revenue_gap)}
+            </p>
+            <p className="text-sm text-text-secondary mt-1">Target revenue minus collected revenue.</p>
           </Card>
 
           <Card className="p-5">
