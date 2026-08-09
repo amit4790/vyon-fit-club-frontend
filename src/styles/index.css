@@ -14,6 +14,15 @@ html {
 
 body {
   @apply bg-bg-primary text-text-primary font-sans antialiased;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+.selectable-text {
+  user-select: text;
 }
 
 /* ============================================================

@@ -152,7 +152,7 @@ export default function AdminReports() {
 
           <Card className="p-5">
             <p className="text-xs uppercase tracking-wide text-text-secondary">Outstanding Revenue</p>
-            <p className="text-2xl font-semibold text-accent mt-2">{formatCurrency(summary.outstanding_revenue)}</p>
+            <p className="text-2xl font-semibold text-warning mt-2">{formatCurrency(summary.outstanding_revenue)}</p>
             <p className="text-sm text-text-secondary mt-1">
               Amount still owed on pending and partial invoices.
             </p>
@@ -201,7 +201,7 @@ export default function AdminReports() {
             <p
               className={`text-2xl font-semibold mt-2 ${
                 summary.revenue_gap > 0
-                  ? 'text-accent'
+                  ? 'text-warning'
                   : summary.revenue_gap < 0
                     ? 'text-success'
                     : 'text-primary'
