@@ -725,6 +725,20 @@ export default function AdminMembers() {
   const isMemberDeviceSynced = (member: MemberRecord) =>
     (member.device_sync_status || '').toLowerCase() === 'synced'
 
+  const deviceSyncBadge = (member: MemberRecord) => {
+    const status = (member.device_sync_status || '').toLowerCase()
+    if (status === 'synced') {
+      return { label: 'Synced', className: 'bg-green-100 text-green-700' }
+    }
+    if (status === 'pending') {
+      return { label: 'Pending', className: 'bg-amber-100 text-amber-800' }
+    }
+    if (status === 'failed') {
+      return { label: 'Failed', className: 'bg-red-100 text-red-700' }
+    }
+    return { label: 'Not synced', className: 'bg-bg-secondary text-text-secondary' }
+  }
+
   const handleSyncMemberToDevice = async (member: MemberRecord) => {
     const deviceSn = resolveDeviceSnOrToast()
     if (!deviceSn) {
@@ -734,14 +748,14 @@ export default function AdminMembers() {
     setSyncingMemberId(member.id)
     try {
       await adminService.syncMemberToDevice(deviceSn, member.id)
-      success('Member sync complete', `${member.full_name} queued for device ${deviceSn}`)
+      success('Member sync queued', `Waiting for device ${deviceSn} to confirm`)
       setMembers((prev) =>
         prev.map((row) =>
           row.id === member.id
             ? {
                 ...row,
-                device_sync_status: 'synced',
-                last_device_sync_at: new Date().toISOString(),
+                device_sync_status: 'pending',
+                last_device_sync_at: null,
               }
             : row
         )
@@ -767,14 +781,14 @@ export default function AdminMembers() {
       setIsResyncModalOpen(false)
       const membersCount = response.members_synced ?? response.queued_commands
       success(
-        'Device re-sync complete',
-        `${membersCount} member(s) queued for ${deviceSn}`
+        'Device re-sync queued',
+        `${membersCount} member(s) pending confirmation from ${deviceSn}`
       )
       setMembers((prev) =>
         prev.map((row) => ({
           ...row,
-          device_sync_status: 'synced',
-          last_device_sync_at: new Date().toISOString(),
+          device_sync_status: 'pending',
+          last_device_sync_at: null,
         }))
       )
       await loadMembers(memberPage, activeSearch, false)
@@ -1222,15 +1236,16 @@ export default function AdminMembers() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-                          isMemberDeviceSynced(member)
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-bg-secondary text-text-secondary'
-                        }`}
-                      >
-                        {isMemberDeviceSynced(member) ? 'Synced' : 'Not synced'}
-                      </span>
+                      {(() => {
+                        const badge = deviceSyncBadge(member)
+                        return (
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}
+                          >
+                            {badge.label}
+                          </span>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-wrap justify-end gap-2">
