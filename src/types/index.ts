@@ -127,6 +127,7 @@ export interface TrainerRecord {
   specialization?: string | null
   role: string
   is_active: boolean
+  assigned_member_count?: number
 }
 
 export interface TrainerPayload {
@@ -245,6 +246,8 @@ export interface TrainerAssignedMember {
   id: number
   full_name: string
   mobile_number: string
+  status?: string | null
+  assigned_at?: string | null
 }
 
 export interface TrainerDetailRecord {
@@ -255,12 +258,39 @@ export interface TrainerDetailRecord {
   specialization: string | null
   role: string
   is_active: boolean
+  assigned_member_count?: number
   assigned_members: TrainerAssignedMember[]
 }
 
 export interface TrainerDetailApiResponse {
   message: string
   data: TrainerDetailRecord
+}
+
+export interface AssignableMemberRecord {
+  id: number
+  full_name: string
+  mobile_number: string
+  status: string
+  current_trainer_id: number | null
+}
+
+export interface AssignableMembersApiResponse {
+  message: string
+  data: AssignableMemberRecord[]
+}
+
+export interface AssignMemberToTrainerPayload {
+  member_id: number
+}
+
+export interface AssignMemberToTrainerApiResponse {
+  message: string
+  data: TrainerAssignedMember
+}
+
+export interface UnassignMemberFromTrainerApiResponse {
+  message: string
 }
 
 export interface AdminProfileApiResponse {

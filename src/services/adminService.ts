@@ -34,6 +34,10 @@ import {
   DeviceSyncApiResponse,
   DailyAttendanceApiResponse,
   MonthlyAttendanceApiResponse,
+  AssignableMembersApiResponse,
+  AssignMemberToTrainerApiResponse,
+  AssignMemberToTrainerPayload,
+  UnassignMemberFromTrainerApiResponse,
 } from '../types'
 
 export const adminService = {
@@ -132,6 +136,25 @@ export const adminService = {
 
   getTrainerById: (trainerId: number) =>
     httpClient.get<TrainerDetailApiResponse>(`/admin/trainers/${trainerId}`),
+
+  searchAssignableMembers: (trainerId: number, search?: string) => {
+    const query = new URLSearchParams()
+    if (search?.trim()) {
+      query.set('search', search.trim())
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return httpClient.get<AssignableMembersApiResponse>(
+      `/admin/trainers/${trainerId}/assignable-members${suffix}`
+    )
+  },
+
+  assignMemberToTrainer: (trainerId: number, payload: AssignMemberToTrainerPayload) =>
+    httpClient.post<AssignMemberToTrainerApiResponse>(`/admin/trainers/${trainerId}/members`, payload),
+
+  unassignMemberFromTrainer: (trainerId: number, memberId: number) =>
+    httpClient.delete<UnassignMemberFromTrainerApiResponse>(
+      `/admin/trainers/${trainerId}/members/${memberId}`
+    ),
 
   createTrainer: (payload: TrainerPayload) =>
     httpClient.post<TrainerOperationApiResponse>('/admin/trainers', payload),

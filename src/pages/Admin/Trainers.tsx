@@ -227,6 +227,7 @@ export default function AdminTrainers() {
               <TableHeaderCell>Email</TableHeaderCell>
               <TableHeaderCell>Phone</TableHeaderCell>
               <TableHeaderCell>Device PIN</TableHeaderCell>
+              <TableHeaderCell>PT Members</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
               <TableHeaderCell className="text-right">Actions</TableHeaderCell>
             </TableHeader>
@@ -241,6 +242,9 @@ export default function AdminTrainers() {
                   <TableCell className="text-sm text-text-secondary">{trainer.email}</TableCell>
                   <TableCell className="text-sm text-text-secondary">{trainer.phone_number || '-'}</TableCell>
                   <TableCell className="text-sm text-text-secondary">{trainerDevicePin(trainer.id)}</TableCell>
+                  <TableCell className="text-sm text-text-secondary">
+                    {trainer.assigned_member_count ?? 0}
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
