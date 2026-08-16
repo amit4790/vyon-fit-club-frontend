@@ -21,6 +21,7 @@ import {
   PlanOptionOperationApiResponse,
   SubscriptionOperationApiResponse,
   TrainerDeleteApiResponse,
+  TrainerDeviceSyncApiResponse,
   TrainerListApiResponse,
   TrainerOperationApiResponse,
   TrainerPayload,
@@ -31,6 +32,8 @@ import {
   TrainerDetailApiResponse,
   PushDeviceListApiResponse,
   DeviceSyncApiResponse,
+  DailyAttendanceApiResponse,
+  MonthlyAttendanceApiResponse,
 } from '../types'
 
 export const adminService = {
@@ -142,6 +145,9 @@ export const adminService = {
   deleteTrainer: (trainerId: number) =>
     httpClient.delete<TrainerDeleteApiResponse>(`/admin/trainers/${trainerId}`),
 
+  syncTrainersToDevices: () =>
+    httpClient.post<TrainerDeviceSyncApiResponse>('/admin/trainers/sync-devices'),
+
   getClasses: () => httpClient.get('/admin/classes'),
 
   getReportsSummary: () => httpClient.get<ReportsSummaryApiResponse>('/admin/reports/summary'),
@@ -149,6 +155,20 @@ export const adminService = {
   updateTargetRevenue: (targetRevenue: number) =>
     httpClient.patch<ReportsSummaryApiResponse>('/admin/reports/target-revenue', {
       target_revenue: targetRevenue,
+    }),
+
+  getDailyAttendance: (day: string) =>
+    httpClient.get<DailyAttendanceApiResponse>('/admin/attendance/daily', { params: { day } }),
+
+  getMonthlyAttendance: (year: number, month: number) =>
+    httpClient.get<MonthlyAttendanceApiResponse>('/admin/attendance/monthly', {
+      params: { year, month },
+    }),
+
+  exportMonthlyAttendanceCsv: (year: number, month: number) =>
+    httpClient.get<Blob>('/admin/attendance/export', {
+      params: { year, month },
+      responseType: 'blob',
     }),
 
   getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),

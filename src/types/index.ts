@@ -152,6 +152,44 @@ export interface TrainerDeleteApiResponse {
   message: string
 }
 
+export interface TrainerDeviceSyncApiResponse {
+  message: string
+  trainers_queued: number
+  commands_queued: number
+}
+
+export interface DailyAttendanceRow {
+  person_id: number
+  person_name: string
+  specialization?: string | null
+  pin: number
+  punched_at: string
+  is_late: boolean
+}
+
+export interface DailyAttendanceApiResponse {
+  message: string
+  date: string
+  data: DailyAttendanceRow[]
+}
+
+export interface MonthlyAttendanceRow {
+  person_id: number
+  person_name: string
+  specialization?: string | null
+  days_present: number
+  on_time_days: number
+  late_days: number
+  last_check_in: string | null
+}
+
+export interface MonthlyAttendanceApiResponse {
+  message: string
+  year: number
+  month: number
+  data: MonthlyAttendanceRow[]
+}
+
 export interface AdminUserRecord {
   id: number
   full_name: string

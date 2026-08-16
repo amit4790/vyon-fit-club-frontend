@@ -19,13 +19,18 @@ import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { TrainerRecord } from '../../types'
 
+const TRAINER_PIN_OFFSET = 50_000
+
 const DEFAULT_TRAINER_FORM = {
   full_name: '',
   email: '',
   phone_number: '',
   specialization: '',
-  temporary_password: '',
   is_active: 'true',
+}
+
+function trainerDevicePin(trainerId: number): number {
+  return TRAINER_PIN_OFFSET + trainerId
 }
 
 type TrainerFormState = typeof DEFAULT_TRAINER_FORM
@@ -39,6 +44,7 @@ export default function AdminTrainers() {
   const [editingTrainerId, setEditingTrainerId] = useState<number | null>(null)
   const [trainerForm, setTrainerForm] = useState<TrainerFormState>(DEFAULT_TRAINER_FORM)
   const [formError, setFormError] = useState<string | null>(null)
+  const [isSyncingDevices, setIsSyncingDevices] = useState(false)
   const { toasts, removeToast, success, error: errorToast } = useToast()
 
   useEffect(() => {
@@ -81,7 +87,6 @@ export default function AdminTrainers() {
       email: trainer.email,
       phone_number: trainer.phone_number || '',
       specialization: trainer.specialization || '',
-      temporary_password: '',
       is_active: trainer.is_active ? 'true' : 'false',
     })
     setFormError(null)
@@ -115,11 +120,6 @@ export default function AdminTrainers() {
       return
     }
 
-    if (!editingTrainerId && !trainerForm.temporary_password.trim()) {
-      setFormError('Temporary Password is required')
-      return
-    }
-
     try {
       setIsSubmitting(true)
       setFormError(null)
@@ -129,22 +129,15 @@ export default function AdminTrainers() {
         email: trainerForm.email.trim(),
         phone_number: trainerForm.phone_number.trim(),
         specialization: trainerForm.specialization.trim() || null,
-        temporary_password: trainerForm.temporary_password,
         is_active: trainerForm.is_active === 'true',
       }
 
       if (editingTrainerId) {
-        await adminService.updateTrainer(editingTrainerId, {
-          full_name: payload.full_name,
-          email: payload.email,
-          phone_number: payload.phone_number,
-          specialization: payload.specialization,
-          is_active: payload.is_active,
-        })
+        await adminService.updateTrainer(editingTrainerId, payload)
         success('Trainer updated', 'Trainer details were saved successfully')
       } else {
         await adminService.createTrainer(payload)
-        success('Trainer added', 'New trainer was added successfully')
+        success('Trainer added', 'Trainer queued for device sync')
       }
 
       closeTrainerModal()
@@ -173,6 +166,22 @@ export default function AdminTrainers() {
     }
   }
 
+  const handleSyncTrainersToDevices = async () => {
+    try {
+      setIsSyncingDevices(true)
+      const response = await adminService.syncTrainersToDevices()
+      success(
+        'Trainers queued for device',
+        `${response.trainers_queued} trainer(s), ${response.commands_queued} command(s)`
+      )
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Device sync failed', apiError.message)
+    } finally {
+      setIsSyncingDevices(false)
+    }
+  }
+
   const handleLogout = () => {
     AuthService.logout()
     navigate('/')
@@ -184,7 +193,7 @@ export default function AdminTrainers() {
   return (
     <AdminShell
       title="Trainers"
-      subtitle="Manage trainer accounts"
+      subtitle="Manage trainers"
       userName={userName}
       onLogout={handleLogout}
     >
@@ -192,12 +201,19 @@ export default function AdminTrainers() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Trainer Management</h2>
-            <p className="text-sm text-text-secondary mt-1">
-              Add, edit and deactivate trainer accounts.
-            </p>
           </div>
 
-          <Button size="sm" onClick={openCreateTrainerModal}>Add Trainer</Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              isLoading={isSyncingDevices}
+              onClick={() => void handleSyncTrainersToDevices()}
+            >
+              Sync to Devices
+            </Button>
+            <Button size="sm" onClick={openCreateTrainerModal}>Add Trainer</Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -210,6 +226,7 @@ export default function AdminTrainers() {
               <TableHeaderCell>Name</TableHeaderCell>
               <TableHeaderCell>Email</TableHeaderCell>
               <TableHeaderCell>Phone</TableHeaderCell>
+              <TableHeaderCell>Device PIN</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
               <TableHeaderCell className="text-right">Actions</TableHeaderCell>
             </TableHeader>
@@ -223,6 +240,7 @@ export default function AdminTrainers() {
                   <TableCell className="text-sm text-text-secondary">{trainer.full_name}</TableCell>
                   <TableCell className="text-sm text-text-secondary">{trainer.email}</TableCell>
                   <TableCell className="text-sm text-text-secondary">{trainer.phone_number || '-'}</TableCell>
+                  <TableCell className="text-sm text-text-secondary">{trainerDevicePin(trainer.id)}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
@@ -303,14 +321,11 @@ export default function AdminTrainers() {
             value={trainerForm.specialization}
             onChange={(event) => updateFormField('specialization', event.target.value)}
           />
-          {!editingTrainerId && (
-            <Input
-              label="Temporary Password *"
-              type="password"
-              value={trainerForm.temporary_password}
-              onChange={(event) => updateFormField('temporary_password', event.target.value)}
-            />
-          )}
+          {editingTrainerId ? (
+            <p className="text-sm text-text-secondary">
+              Device PIN: <span className="font-medium">{trainerDevicePin(editingTrainerId)}</span>
+            </p>
+          ) : null}
           <Select
             label="Status"
             value={trainerForm.is_active}
