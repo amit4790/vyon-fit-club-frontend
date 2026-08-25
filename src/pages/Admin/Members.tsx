@@ -867,11 +867,6 @@ export default function AdminMembers() {
       return
     }
 
-    if (subscriptionStartDate > todayIso) {
-      setSubscriptionFormError('Start Date cannot be in the future')
-      return
-    }
-
     try {
       setIsSubmittingSubscription(true)
       setSubscriptionFormError(null)
@@ -1574,7 +1569,6 @@ export default function AdminMembers() {
               label="Start Date"
               type="date"
               value={subscriptionStartDate}
-              max={todayIso}
               onChange={(event) => setSubscriptionStartDate(event.target.value)}
             />
 
