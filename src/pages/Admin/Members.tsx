@@ -196,6 +196,7 @@ export default function AdminMembers() {
   const [expiringDays, setExpiringDays] = useState(7)
   const [expiringTotal, setExpiringTotal] = useState(0)
   const [expiringUnavailable, setExpiringUnavailable] = useState(false)
+  const [isExportingMembers, setIsExportingMembers] = useState(false)
   const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
   const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
   const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
@@ -556,6 +557,28 @@ export default function AdminMembers() {
     setSearchParams(nextParams)
 
     await loadMembers(1, searchText, true)
+  }
+
+  const handleExportMembers = async () => {
+    try {
+      setIsExportingMembers(true)
+      const blob = await adminService.exportMembersExcel()
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      const today = new Date().toISOString().slice(0, 10)
+      anchor.href = url
+      anchor.download = `vyon-members-${today}.xlsx`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+      success('Export ready', 'Member list downloaded as Excel')
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Export failed', apiError.message)
+    } finally {
+      setIsExportingMembers(false)
+    }
   }
 
   const openCreateMemberModal = () => {
@@ -1103,6 +1126,16 @@ export default function AdminMembers() {
                 Add Admin
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={isExportingMembers}
+              onClick={() => {
+                void handleExportMembers()
+              }}
+            >
+              {isExportingMembers ? 'Exporting...' : 'Export to Excel'}
+            </Button>
             <Button size="sm" onClick={openCreateMemberModal}>Add Member</Button>
           </div>
         </div>
@@ -1111,7 +1144,13 @@ export default function AdminMembers() {
           <Input
             value={memberSearch}
             onChange={(event) => setMemberSearch(event.target.value)}
-            placeholder="Search by name or mobile number"
+            placeholder="Search by ID, name or mobile number"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                void handleMemberSearch()
+              }
+            }}
           />
           <Button size="sm" onClick={handleMemberSearch}>Search</Button>
         </div>
@@ -1121,7 +1160,9 @@ export default function AdminMembers() {
             <div>
               <p className="text-sm font-semibold text-text-secondary">Expiring Subscriptions</p>
               <p className="text-xs text-text-secondary">
-                {expiringTotal} active subscription(s) expiring in the selected window.
+                {expiringTotal > expiringSubscriptions.length
+                  ? `Showing ${expiringSubscriptions.length} of ${expiringTotal} active subscription(s) expiring in the selected window. Export to Excel for the full list.`
+                  : `${expiringTotal} active subscription(s) expiring in the selected window.`}
               </p>
             </div>
             <div className="flex items-center gap-2">

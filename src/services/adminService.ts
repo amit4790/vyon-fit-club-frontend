@@ -68,6 +68,12 @@ export const adminService = {
   deleteMember: (memberId: number) =>
     httpClient.delete<MemberDeleteApiResponse>(`/admin/members/${memberId}`),
 
+  exportMembersExcel: () =>
+    httpClient.get<Blob>('/admin/members/export', {
+      responseType: 'blob',
+      timeout: 120000,
+    }),
+
   getPlanCatalog: () => httpClient.get<PlanCatalogApiResponse>('/admin/plans'),
 
   updatePlanPrice: (planId: number, payload: { base_price: number; tax_percent?: number }) =>
