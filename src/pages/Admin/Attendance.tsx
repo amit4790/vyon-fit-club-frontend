@@ -155,7 +155,7 @@ export default function AdminAttendance() {
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Trainer Attendance</h2>
             <p className="text-sm text-text-secondary mt-1">
-              First check-in per day. Late after 06:15 (shift start 06:00 + 15 min grace).
+              First check-in time per day from biometric punches.
             </p>
           </div>
 
@@ -219,7 +219,6 @@ export default function AdminAttendance() {
                 <TableHeaderCell>Specialization</TableHeaderCell>
                 <TableHeaderCell>Device PIN</TableHeaderCell>
                 <TableHeaderCell>Check-in</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
               </TableHeader>
               <TableBody>
                 {dailyRows.map((row) => (
@@ -228,15 +227,6 @@ export default function AdminAttendance() {
                     <TableCell className="text-sm text-text-secondary">{row.specialization || '—'}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{row.pin}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{formatPunchTime(row.punched_at)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-                          row.is_late ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'
-                        }`}
-                      >
-                        {row.is_late ? 'Late' : 'On time'}
-                      </span>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -253,8 +243,6 @@ export default function AdminAttendance() {
                 <TableHeaderCell>Trainer</TableHeaderCell>
                 <TableHeaderCell>Specialization</TableHeaderCell>
                 <TableHeaderCell>Days Present</TableHeaderCell>
-                <TableHeaderCell>On Time</TableHeaderCell>
-                <TableHeaderCell>Late</TableHeaderCell>
                 <TableHeaderCell>Last Check-in</TableHeaderCell>
               </TableHeader>
               <TableBody>
@@ -263,8 +251,6 @@ export default function AdminAttendance() {
                     <TableCell className="text-sm text-text-secondary">{row.person_name}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{row.specialization || '—'}</TableCell>
                     <TableCell className="text-sm text-text-secondary">{row.days_present}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{row.on_time_days}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{row.late_days}</TableCell>
                     <TableCell className="text-sm text-text-secondary">
                       {formatPunchDateTime(row.last_check_in)}
                     </TableCell>

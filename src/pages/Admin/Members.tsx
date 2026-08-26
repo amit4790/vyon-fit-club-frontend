@@ -163,6 +163,7 @@ export default function AdminMembers() {
   const [membersLoading, setMembersLoading] = useState(false)
   const [memberSearch, setMemberSearch] = useState('')
   const [activeSearch, setActiveSearch] = useState('')
+  const [membershipStatusFilter, setMembershipStatusFilter] = useState('')
   const [memberPage, setMemberPage] = useState(1)
   const [pageSize] = useState(10)
   const [pagination, setPagination] = useState<MemberListPagination>({
@@ -356,7 +357,8 @@ export default function AdminMembers() {
   const loadMembers = async (
     page = memberPage,
     search = activeSearch,
-    showLoader = false
+    showLoader = false,
+    statusFilter = membershipStatusFilter
   ) => {
     try {
       if (showLoader) {
@@ -366,6 +368,7 @@ export default function AdminMembers() {
         page,
         pageSize,
         search,
+        membershipStatus: statusFilter || undefined,
       })
       setMembers(response.data)
       await loadMembershipSnapshots(response.data)
@@ -1150,6 +1153,22 @@ export default function AdminMembers() {
                 event.preventDefault()
                 void handleMemberSearch()
               }
+            }}
+          />
+          <Select
+            value={membershipStatusFilter}
+            options={[
+              { value: '', label: 'All statuses' },
+              { value: 'active', label: 'Active' },
+              { value: 'active_pending_payment', label: 'Active - Pending Payment' },
+              { value: 'inactive_unpaid', label: 'Inactive (Unpaid)' },
+              { value: 'expired', label: 'Expired' },
+              { value: 'none', label: 'No Membership' },
+            ]}
+            onChange={(event) => {
+              const nextFilter = event.target.value
+              setMembershipStatusFilter(nextFilter)
+              void loadMembers(1, activeSearch, true, nextFilter)
             }}
           />
           <Button size="sm" onClick={handleMemberSearch}>Search</Button>

@@ -43,7 +43,12 @@ import {
 export const adminService = {
   getDashboard: () => httpClient.get('/dashboard/admin'),
 
-  getMembers: (params: { page: number; pageSize: number; search?: string }) => {
+  getMembers: (params: {
+    page: number
+    pageSize: number
+    search?: string
+    membershipStatus?: string
+  }) => {
     const query = new URLSearchParams({
       page: params.page.toString(),
       page_size: params.pageSize.toString(),
@@ -51,6 +56,10 @@ export const adminService = {
 
     if (params.search?.trim()) {
       query.set('search', params.search.trim())
+    }
+
+    if (params.membershipStatus?.trim()) {
+      query.set('membership_status', params.membershipStatus.trim())
     }
 
     return httpClient.get<MemberListApiResponse>(`/admin/members?${query.toString()}`)
