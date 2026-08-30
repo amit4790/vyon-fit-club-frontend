@@ -48,6 +48,7 @@ export const adminService = {
     pageSize: number
     search?: string
     membershipStatus?: string
+    sort?: string
   }) => {
     const query = new URLSearchParams({
       page: params.page.toString(),
@@ -60,6 +61,10 @@ export const adminService = {
 
     if (params.membershipStatus?.trim()) {
       query.set('membership_status', params.membershipStatus.trim())
+    }
+
+    if (params.sort?.trim()) {
+      query.set('sort', params.sort.trim())
     }
 
     return httpClient.get<MemberListApiResponse>(`/admin/members?${query.toString()}`)

@@ -79,6 +79,37 @@ function computeEndDate(startDate: string, durationValue: number, durationUnit: 
   return endDate.toISOString().slice(0, 10)
 }
 
+function addOneDay(isoDate: string): string {
+  const [yearText, monthText, dayText] = isoDate.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!year || !month || !day) {
+    return ''
+  }
+  const next = new Date(Date.UTC(year, month - 1, day))
+  next.setUTCDate(next.getUTCDate() + 1)
+  return next.toISOString().slice(0, 10)
+}
+
+function computeEndDateWithBonus(
+  startDate: string,
+  durationValue: number,
+  durationUnit: SubscriptionDurationUnit,
+  bonusValue: number,
+  bonusUnit: SubscriptionDurationUnit
+): string {
+  const paidEnd = computeEndDate(startDate, durationValue, durationUnit)
+  if (!paidEnd) {
+    return ''
+  }
+  if (!Number.isFinite(bonusValue) || bonusValue <= 0) {
+    return paidEnd
+  }
+  const bonusStart = addOneDay(paidEnd)
+  return computeEndDate(bonusStart, bonusValue, bonusUnit)
+}
+
 function formatDisplayDate(value: string | null | undefined): string {
   if (!value) {
     return '-'
@@ -164,6 +195,7 @@ export default function AdminMembers() {
   const [memberSearch, setMemberSearch] = useState('')
   const [activeSearch, setActiveSearch] = useState('')
   const [membershipStatusFilter, setMembershipStatusFilter] = useState('')
+  const [sortByExpiry, setSortByExpiry] = useState(false)
   const [memberPage, setMemberPage] = useState(1)
   const [pageSize] = useState(10)
   const [pagination, setPagination] = useState<MemberListPagination>({
@@ -190,6 +222,8 @@ export default function AdminMembers() {
   )
   const [subscriptionDurationValue, setSubscriptionDurationValue] = useState('1')
   const [subscriptionDurationUnit, setSubscriptionDurationUnit] = useState<SubscriptionDurationUnit>('months')
+  const [subscriptionBonusValue, setSubscriptionBonusValue] = useState('')
+  const [subscriptionBonusUnit, setSubscriptionBonusUnit] = useState<SubscriptionDurationUnit>('months')
   const [subscriptionFormError, setSubscriptionFormError] = useState<string | null>(null)
   const [expiringSubscriptions, setExpiringSubscriptions] = useState<
     ExpiringSubscriptionsApiResponse['data']
@@ -247,9 +281,23 @@ export default function AdminMembers() {
   }, [planCatalog])
 
   const parsedDurationValue = Number.parseInt(subscriptionDurationValue, 10)
+  const parsedBonusValue = Number.parseInt(subscriptionBonusValue, 10)
   const calculatedSubscriptionEndDate = useMemo(
-    () => computeEndDate(subscriptionStartDate, parsedDurationValue, subscriptionDurationUnit),
-    [subscriptionStartDate, parsedDurationValue, subscriptionDurationUnit]
+    () =>
+      computeEndDateWithBonus(
+        subscriptionStartDate,
+        parsedDurationValue,
+        subscriptionDurationUnit,
+        Number.isFinite(parsedBonusValue) ? parsedBonusValue : 0,
+        subscriptionBonusUnit
+      ),
+    [
+      subscriptionStartDate,
+      parsedDurationValue,
+      subscriptionDurationUnit,
+      parsedBonusValue,
+      subscriptionBonusUnit,
+    ]
   )
 
   const selectedAssignablePlan = useMemo(
@@ -358,7 +406,8 @@ export default function AdminMembers() {
     page = memberPage,
     search = activeSearch,
     showLoader = false,
-    statusFilter = membershipStatusFilter
+    statusFilter = membershipStatusFilter,
+    sortExpiry = sortByExpiry
   ) => {
     try {
       if (showLoader) {
@@ -369,6 +418,7 @@ export default function AdminMembers() {
         pageSize,
         search,
         membershipStatus: statusFilter || undefined,
+        sort: sortExpiry ? 'expiry' : undefined,
       })
       setMembers(response.data)
       await loadMembershipSnapshots(response.data)
@@ -599,6 +649,8 @@ export default function AdminMembers() {
     setSubscriptionStartDate(new Date().toISOString().slice(0, 10))
     setSubscriptionDurationValue('1')
     setSubscriptionDurationUnit('months')
+    setSubscriptionBonusValue('')
+    setSubscriptionBonusUnit('months')
     setSelectedPlanId('')
     setIsSubscriptionModalOpen(true)
     await loadPlanCatalog()
@@ -610,8 +662,24 @@ export default function AdminMembers() {
     setSubscriptionMember(member)
     setSubscriptionFormError(null)
     setSubscriptionStartDate(subscription.start_date || new Date().toISOString().slice(0, 10))
-    setSubscriptionDurationValue('1')
-    setSubscriptionDurationUnit('months')
+    setSubscriptionDurationValue(
+      subscription.duration_value != null ? String(subscription.duration_value) : '1'
+    )
+    setSubscriptionDurationUnit(
+      subscription.duration_unit === 'days' || subscription.duration_unit === 'months'
+        ? subscription.duration_unit
+        : 'months'
+    )
+    setSubscriptionBonusValue(
+      subscription.bonus_duration_value != null && subscription.bonus_duration_value > 0
+        ? String(subscription.bonus_duration_value)
+        : ''
+    )
+    setSubscriptionBonusUnit(
+      subscription.bonus_duration_unit === 'days' || subscription.bonus_duration_unit === 'months'
+        ? subscription.bonus_duration_unit
+        : 'months'
+    )
     setSelectedPlanId(String(subscription.plan_id))
     setIsSubscriptionModalOpen(true)
     await loadPlanCatalog()
@@ -633,6 +701,8 @@ export default function AdminMembers() {
     setSelectedPlanId('')
     setSubscriptionDurationValue('1')
     setSubscriptionDurationUnit('months')
+    setSubscriptionBonusValue('')
+    setSubscriptionBonusUnit('months')
     setSubscriptionFormError(null)
   }
 
@@ -888,10 +958,37 @@ export default function AdminMembers() {
       return
     }
 
+    const hasBonusInput = subscriptionBonusValue.trim() !== ''
+    if (hasBonusInput && (!Number.isFinite(parsedBonusValue) || parsedBonusValue < 0)) {
+      setSubscriptionFormError('Bonus value must be zero or greater')
+      return
+    }
+
+    if (
+      hasBonusInput &&
+      parsedBonusValue > 0 &&
+      subscriptionBonusUnit !== 'months' &&
+      subscriptionBonusUnit !== 'days'
+    ) {
+      setSubscriptionFormError('Bonus unit must be Months or Days')
+      return
+    }
+
     if (!calculatedSubscriptionEndDate) {
       setSubscriptionFormError('Unable to calculate end date from the selected duration')
       return
     }
+
+    const bonusPayload =
+      hasBonusInput && parsedBonusValue > 0
+        ? {
+            bonus_duration_value: parsedBonusValue,
+            bonus_duration_unit: subscriptionBonusUnit,
+          }
+        : {
+            bonus_duration_value: 0,
+            bonus_duration_unit: subscriptionBonusUnit,
+          }
 
     try {
       setIsSubmittingSubscription(true)
@@ -908,6 +1005,7 @@ export default function AdminMembers() {
           start_date: subscriptionStartDate,
           duration_value: parsedDurationValue,
           duration_unit: subscriptionDurationUnit,
+          ...bonusPayload,
         })
 
         success('Membership updated', `Plan updated for ${subscriptionMember.full_name}`)
@@ -933,6 +1031,7 @@ export default function AdminMembers() {
         start_date: subscriptionStartDate,
         duration_value: parsedDurationValue,
         duration_unit: subscriptionDurationUnit,
+        ...bonusPayload,
       })
 
       const sentCount = (response.notifications || []).filter((item) => item.status === 'sent').length
@@ -1168,9 +1267,20 @@ export default function AdminMembers() {
             onChange={(event) => {
               const nextFilter = event.target.value
               setMembershipStatusFilter(nextFilter)
-              void loadMembers(1, activeSearch, true, nextFilter)
+              void loadMembers(1, activeSearch, true, nextFilter, sortByExpiry)
             }}
           />
+          <Button
+            size="sm"
+            variant={sortByExpiry ? 'primary' : 'secondary'}
+            onClick={() => {
+              const nextSort = !sortByExpiry
+              setSortByExpiry(nextSort)
+              void loadMembers(1, activeSearch, true, membershipStatusFilter, nextSort)
+            }}
+          >
+            {sortByExpiry ? 'Sorted by Expiry' : 'Sort by Expiry'}
+          </Button>
           <Button size="sm" onClick={handleMemberSearch}>Search</Button>
         </div>
 
@@ -1663,6 +1773,33 @@ export default function AdminMembers() {
                   onChange={(event) => setSubscriptionDurationUnit(event.target.value as SubscriptionDurationUnit)}
                 />
               </div>
+            </div>
+
+            <div className="rounded border border-border-light px-3 py-3">
+              <p className="text-sm font-semibold text-text-secondary mb-3">Bonus</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input
+                  label="Value"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={subscriptionBonusValue}
+                  onChange={(event) => setSubscriptionBonusValue(event.target.value)}
+                  placeholder="Optional"
+                />
+                <Select
+                  label="Unit"
+                  value={subscriptionBonusUnit}
+                  options={[
+                    { value: 'months', label: 'Months' },
+                    { value: 'days', label: 'Days' },
+                  ]}
+                  onChange={(event) => setSubscriptionBonusUnit(event.target.value as SubscriptionDurationUnit)}
+                />
+              </div>
+              <p className="mt-2 text-xs text-text-secondary">
+                Bonus extends membership at no extra charge. Leave blank for none.
+              </p>
             </div>
 
             <Input

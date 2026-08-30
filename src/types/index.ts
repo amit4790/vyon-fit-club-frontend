@@ -110,6 +110,8 @@ export interface AssignSubscriptionPayload {
   start_date: string
   duration_value?: number
   duration_unit?: SubscriptionDurationUnit
+  bonus_duration_value?: number
+  bonus_duration_unit?: SubscriptionDurationUnit
 }
 
 export interface ChangeSubscriptionPlanPayload {
@@ -117,6 +119,8 @@ export interface ChangeSubscriptionPlanPayload {
   start_date?: string
   duration_value?: number
   duration_unit?: SubscriptionDurationUnit
+  bonus_duration_value?: number
+  bonus_duration_unit?: SubscriptionDurationUnit
 }
 
 export interface TrainerRecord {
@@ -312,6 +316,10 @@ export interface SubscriptionRecord {
   plan_variant: string | null
   plan_label: string
   duration_label: string
+  duration_value?: number | null
+  duration_unit?: SubscriptionDurationUnit | null
+  bonus_duration_value?: number | null
+  bonus_duration_unit?: SubscriptionDurationUnit | null
   start_date: string
   end_date: string
   status: string

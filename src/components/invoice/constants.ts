@@ -9,6 +9,7 @@ export const DEFAULT_INVOICE_RULES: string[] = [
   'Members should consult a physician before joining and are responsible for disclosing relevant medical history.',
   'Membership can be paused only in approved cases with valid supporting documents.',
   'Discounted or complimentary months cannot be paused, carried forward, or converted to cash.',
+  'Liability Disclaimer: By paying this invoice or utilizing our facilities, the client acknowledges the inherent risks of physical activity and agrees that Vyon Fit Club is not liable for any personal injuries, accidents, or health complications sustained on the premises.',
 ]
 
 export const DEFAULT_GYM_PROFILE: GymProfile = {
