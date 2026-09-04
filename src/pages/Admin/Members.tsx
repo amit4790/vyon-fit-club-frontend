@@ -230,8 +230,11 @@ export default function AdminMembers() {
   >([])
   const [expiringDays, setExpiringDays] = useState(7)
   const [expiringTotal, setExpiringTotal] = useState(0)
+  const [expiringPage, setExpiringPage] = useState(1)
+  const [expiringTotalPages, setExpiringTotalPages] = useState(0)
   const [expiringUnavailable, setExpiringUnavailable] = useState(false)
   const [isExportingMembers, setIsExportingMembers] = useState(false)
+  const [isExportingExpiring, setIsExportingExpiring] = useState(false)
   const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
   const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
   const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
@@ -578,21 +581,46 @@ export default function AdminMembers() {
     }
   }
 
-  const loadExpiringSubscriptions = async (days: number) => {
+  const loadExpiringSubscriptions = async (days: number, page = 1) => {
     try {
       const response = await adminService.getExpiringSubscriptions({
         days,
-        page: 1,
-        pageSize: 5,
+        page,
+        pageSize: 25,
       })
       setExpiringSubscriptions(response.data)
       setExpiringTotal(response.pagination.total_items)
+      setExpiringPage(response.pagination.page)
+      setExpiringTotalPages(response.pagination.total_pages)
       setExpiringUnavailable(false)
     } catch (err) {
       console.error('Failed to load expiring subscriptions', err)
       setExpiringSubscriptions([])
       setExpiringTotal(0)
+      setExpiringPage(1)
+      setExpiringTotalPages(0)
       setExpiringUnavailable(true)
+    }
+  }
+
+  const handleExportExpiringSubscriptions = async () => {
+    try {
+      setIsExportingExpiring(true)
+      const blob = await adminService.exportExpiringSubscriptionsExcel(expiringDays)
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `expiring-subscriptions-next-${expiringDays}-days.xlsx`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+      success('Export ready', `Expiring members (next ${expiringDays} days) downloaded`)
+    } catch (err: any) {
+      const apiError = ApiErrorHandler.parse(err)
+      errorToast('Export failed', apiError.message)
+    } finally {
+      setIsExportingExpiring(false)
     }
   }
 
@@ -1289,12 +1317,12 @@ export default function AdminMembers() {
             <div>
               <p className="text-sm font-semibold text-text-secondary">Expiring Subscriptions</p>
               <p className="text-xs text-text-secondary">
-                {expiringTotal > expiringSubscriptions.length
-                  ? `Showing ${expiringSubscriptions.length} of ${expiringTotal} active subscription(s) expiring in the selected window. Export to Excel for the full list.`
-                  : `${expiringTotal} active subscription(s) expiring in the selected window.`}
+                {expiringTotal > 0
+                  ? `${expiringTotal} active subscription(s) expiring in the selected window.`
+                  : 'No active subscriptions expiring in the selected window.'}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={String(expiringDays)}
                 options={[
@@ -1305,18 +1333,82 @@ export default function AdminMembers() {
                 onChange={async (event) => {
                   const days = Number(event.target.value)
                   setExpiringDays(days)
-                  await loadExpiringSubscriptions(days)
+                  await loadExpiringSubscriptions(days, 1)
                 }}
               />
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={isExportingExpiring || expiringTotal === 0}
+                onClick={() => void handleExportExpiringSubscriptions()}
+              >
+                {isExportingExpiring ? 'Exporting...' : 'Export Expiring'}
+              </Button>
             </div>
           </div>
           {expiringSubscriptions.length > 0 && (
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-              {expiringSubscriptions.map((item) => (
-                <div key={item.id} className="text-xs text-text-secondary rounded border border-border-light px-3 py-2">
-                  Member #{item.member_id} | {item.plan_family} {item.plan_variant ? `(${item.plan_variant})` : ''} | Ends {item.end_date}
+            <div className="mt-3 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableHeaderCell>Member</TableHeaderCell>
+                  <TableHeaderCell>Plan</TableHeaderCell>
+                  <TableHeaderCell>Ends</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Open</TableHeaderCell>
+                </TableHeader>
+                <TableBody>
+                  {expiringSubscriptions.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-sm text-text-secondary">
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-text-secondary">ID {item.member_id}</p>
+                          <p className="text-text-primary">{item.member_name || '—'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-text-secondary">
+                        {item.plan_label || `${item.plan_family}${item.plan_variant ? ` (${item.plan_variant})` : ''}`}
+                      </TableCell>
+                      <TableCell className="text-sm text-text-secondary">{item.end_date}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            navigate(`/admin/members/${item.member_id}`)
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {expiringTotalPages > 1 && (
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <p className="text-xs text-text-secondary">
+                    Page {expiringPage} of {expiringTotalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={expiringPage <= 1}
+                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={expiringPage >= expiringTotalPages}
+                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
           {expiringUnavailable && (
