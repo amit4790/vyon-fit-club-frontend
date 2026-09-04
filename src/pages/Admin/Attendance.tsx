@@ -33,7 +33,14 @@ function formatPunchTime(value: string): string {
   if (Number.isNaN(date.getTime())) {
     return value
   }
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  // Gym device / business timezone (IST). Avoid browser-local drift if admin travels.
+  return date.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  })
 }
 
 function formatPunchDateTime(value: string | null): string {
@@ -44,12 +51,13 @@ function formatPunchDateTime(value: string | null): string {
   if (Number.isNaN(date.getTime())) {
     return value
   }
-  return date.toLocaleString([], {
+  return date.toLocaleString('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
   })
 }
 
