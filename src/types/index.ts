@@ -17,6 +17,12 @@ export interface Member extends User {
   status: 'active' | 'inactive' | 'suspended'
 }
 
+export interface ActiveMembershipSummary {
+  subscription_id: number
+  plan_label: string
+  end_date: string
+}
+
 export interface MemberRecord {
   id: number
   full_name: string
@@ -33,8 +39,18 @@ export interface MemberRecord {
   device_sync_status?: string | null
   last_device_sync_at?: string | null
   current_plan_label?: string | null
-  membership_status?: 'active' | 'expired' | 'none'
+  membership_status?:
+    | 'active'
+    | 'active_pending_payment'
+    | 'inactive_unpaid'
+    | 'expired'
+    | 'none'
+    | null
+  membership_start_date?: string | null
   membership_expiry_date?: string | null
+  payment_status?: string | null
+  focus_subscription_id?: number | null
+  active_memberships?: ActiveMembershipSummary[]
 }
 
 export interface MemberPayload {

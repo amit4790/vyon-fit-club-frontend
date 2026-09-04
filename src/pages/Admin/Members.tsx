@@ -157,34 +157,43 @@ type MembershipDisplayStatus =
   | 'expired'
   | 'none'
 
-type MemberMembershipSnapshot = {
+type MembershipListSnapshot = {
   action: MembershipActionType
   membershipStatus: MembershipDisplayStatus
   currentPlanLabel: string | null
   expiryDate: string | null
-  subscription: SubscriptionRecord | null
-  activeSubscriptions: SubscriptionRecord[]
+  focusSubscriptionId: number | null
+  activeMemberships: Array<{ subscription_id: number; plan_label: string; end_date: string }>
+}
+
+function membershipSnapshotFromMember(member: MemberRecord): MembershipListSnapshot {
+  const statusKey = member.membership_status || 'none'
+  const membershipStatus: MembershipDisplayStatus =
+    statusKey === 'active' ? 'active_paid' : statusKey
+
+  let action: MembershipActionType = 'assign'
+  if (membershipStatus === 'active_paid') {
+    action = 'view'
+  } else if (
+    membershipStatus === 'active_pending_payment' ||
+    membershipStatus === 'inactive_unpaid'
+  ) {
+    action = 'pay'
+  } else if (membershipStatus === 'expired') {
+    action = 'renew'
+  }
+
+  return {
+    action,
+    membershipStatus,
+    currentPlanLabel: member.current_plan_label || null,
+    expiryDate: member.membership_expiry_date || null,
+    focusSubscriptionId: member.focus_subscription_id ?? null,
+    activeMemberships: member.active_memberships || [],
+  }
 }
 
 type SubscriptionModalMode = 'assign' | 'change'
-
-function deriveInvoiceAmounts(invoice: InvoiceRecord, fallbackFinalAmount: number) {
-  const finalAmount = Number(invoice.final_amount_received ?? fallbackFinalAmount ?? 0)
-  const totalPaid = invoice.total_paid != null
-    ? Number(invoice.total_paid)
-    : invoice.amount_paid_today != null
-      ? Number(invoice.amount_paid_today)
-      : 0
-  const outstandingBalance = invoice.outstanding_balance != null
-    ? Number(invoice.outstanding_balance)
-    : Math.max(finalAmount - totalPaid, 0)
-
-  return {
-    finalAmount,
-    totalPaid,
-    outstandingBalance,
-  }
-}
 
 export default function AdminMembers() {
   const todayIso = new Date().toISOString().slice(0, 10)
@@ -237,7 +246,6 @@ export default function AdminMembers() {
   const [isExportingExpiring, setIsExportingExpiring] = useState(false)
   const [listMode, setListMode] = useState<'members' | 'expiring'>('members')
   const [expiringLoadedOnce, setExpiringLoadedOnce] = useState(false)
-  const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
   const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
   const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
   const [viewMembershipMember, setViewMembershipMember] = useState<MemberRecord | null>(null)
@@ -425,7 +433,6 @@ export default function AdminMembers() {
         sort: sortExpiry ? 'expiry' : undefined,
       })
       setMembers(response.data)
-      await loadMembershipSnapshots(response.data)
       setPagination(response.pagination)
       setMemberPage(response.pagination.page)
     } catch (err: any) {
@@ -436,132 +443,6 @@ export default function AdminMembers() {
         setMembersLoading(false)
       }
     }
-  }
-
-  const loadMembershipSnapshots = async (targetMembers: MemberRecord[]) => {
-    const today = new Date().toISOString().slice(0, 10)
-
-    const snapshots = await Promise.all(
-      targetMembers.map(async (member) => {
-        try {
-          const response = await adminService.getMemberSubscriptions(member.id)
-          const subscriptions = response.data || []
-
-          const activeSubscriptions = subscriptions.filter(
-            (item) => item.status === 'active' && item.end_date >= today
-          )
-          const latestSubscription = subscriptions[0]
-          const primarySubscription = activeSubscriptions[0] || null
-
-          let snapshot: MemberMembershipSnapshot
-
-          if (primarySubscription) {
-            let invoicesForMember: InvoiceRecord[] = []
-            try {
-              const invoicesResponse = await adminService.getInvoices({
-                page: 1,
-                pageSize: 50,
-                memberId: member.id,
-              })
-              invoicesForMember = invoicesResponse.data
-            } catch {
-              invoicesForMember = []
-            }
-
-            const resolvePaymentStatus = (subscription: SubscriptionRecord) => {
-              const paymentStatus = (subscription.payment_status || '').trim().toLowerCase()
-              if (paymentStatus === 'paid' || paymentStatus === 'partial') {
-                return paymentStatus
-              }
-
-              const linkedInvoice = invoicesForMember
-                .filter((invoice) => invoice.subscription_id === subscription.id)
-                .sort((a, b) => new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime())[0]
-
-              if (!linkedInvoice) {
-                return paymentStatus || 'pending'
-              }
-
-              const derived = deriveInvoiceAmounts(linkedInvoice, subscription.total_amount)
-              if (derived.outstandingBalance <= 0 || linkedInvoice.status === 'paid') {
-                return 'paid'
-              }
-              if (derived.totalPaid > 0) {
-                return 'partial'
-              }
-              return 'pending'
-            }
-
-            const unpaidSubscription =
-              activeSubscriptions.find((item) => {
-                const status = resolvePaymentStatus(item)
-                return status !== 'paid'
-              }) || null
-
-            const focusSubscription = unpaidSubscription || primarySubscription
-            const effectivePaymentStatus = resolvePaymentStatus(focusSubscription)
-
-            let membershipStatus: MembershipDisplayStatus = 'inactive_unpaid'
-            let action: MembershipActionType = 'pay'
-
-            if (effectivePaymentStatus === 'paid') {
-              membershipStatus = 'active_paid'
-              action = 'view'
-            } else if (effectivePaymentStatus === 'partial') {
-              membershipStatus = 'active_pending_payment'
-              action = 'pay'
-            }
-
-            const planLabels = activeSubscriptions
-              .map((item) => formatMembershipPlanName(item.plan_label))
-              .filter(Boolean)
-
-            snapshot = {
-              action,
-              membershipStatus,
-              currentPlanLabel: planLabels.join(' · '),
-              expiryDate: focusSubscription.end_date,
-              subscription: focusSubscription,
-              activeSubscriptions,
-            }
-          } else if (latestSubscription) {
-            snapshot = {
-              action: 'renew',
-              membershipStatus: 'expired',
-              currentPlanLabel: formatMembershipPlanName(latestSubscription.plan_label),
-              expiryDate: latestSubscription.end_date,
-              subscription: latestSubscription,
-              activeSubscriptions: [],
-            }
-          } else {
-            snapshot = {
-              action: 'assign',
-              membershipStatus: 'none',
-              currentPlanLabel: null,
-              expiryDate: null,
-              subscription: null,
-              activeSubscriptions: [],
-            }
-          }
-
-          return [member.id, snapshot] as const
-        } catch {
-          return [
-            member.id,
-            {
-              action: 'assign',
-              membershipStatus: 'none',
-              currentPlanLabel: null,
-              expiryDate: null,
-              subscription: null,
-              activeSubscriptions: [],
-            },
-          ] as const
-        }
-      })
-    )
-
-    setMembershipSnapshotMap(Object.fromEntries(snapshots))
   }
 
   const handleLogout = () => {
@@ -961,15 +842,14 @@ export default function AdminMembers() {
     await loadMembers(nextPage, activeSearch, true)
   }
 
-  const openSubscriptionPaymentPage = (member: MemberRecord, subscription: SubscriptionRecord | null) => {
-    if (!subscription) {
+  const openSubscriptionPaymentPage = (member: MemberRecord, subscriptionId: number | null) => {
+    if (!subscriptionId) {
       errorToast('Payment route unavailable', 'Unable to find an active subscription for this member.')
       return
     }
 
-    navigate(`/admin/subscriptions/${subscription.id}/payment`, {
+    navigate(`/admin/subscriptions/${subscriptionId}/payment`, {
       state: {
-        subscription,
         memberName: member.full_name,
       },
     })
@@ -1363,14 +1243,7 @@ export default function AdminMembers() {
               <TableBody>
                 {members.map((member) => (
                   (() => {
-                    const membership = membershipSnapshotMap[member.id] || {
-                      action: 'assign' as MembershipActionType,
-                      membershipStatus: 'none' as const,
-                      currentPlanLabel: null,
-                      expiryDate: null,
-                      subscription: null,
-                      activeSubscriptions: [],
-                    }
+                    const membership = membershipSnapshotFromMember(member)
 
                     return (
                   <TableRow
@@ -1386,10 +1259,10 @@ export default function AdminMembers() {
                     </TableCell>
                     <TableCell className="text-sm text-text-secondary">{member.mobile_number}</TableCell>
                     <TableCell className="max-w-[16rem] text-sm text-text-secondary">
-                      {membership.activeSubscriptions.length > 0 ? (
+                      {membership.activeMemberships.length > 0 ? (
                         <div className="space-y-1">
-                          {membership.activeSubscriptions.map((item) => (
-                            <div key={item.id} className="space-y-0.5">
+                          {membership.activeMemberships.map((item) => (
+                            <div key={item.subscription_id} className="space-y-0.5">
                               <p className="truncate text-text-primary">
                                 {formatMembershipPlanName(item.plan_label)}
                               </p>
@@ -1401,7 +1274,9 @@ export default function AdminMembers() {
                         </div>
                       ) : membership.currentPlanLabel ? (
                         <div className="space-y-0.5">
-                          <p className="truncate text-text-primary">{membership.currentPlanLabel}</p>
+                          <p className="truncate text-text-primary">
+                            {formatMembershipPlanName(membership.currentPlanLabel)}
+                          </p>
                           <p className="text-xs text-text-secondary">
                             {membership.membershipStatus !== 'expired'
                               ? `Expires: ${formatDisplayDate(membership.expiryDate)}`
@@ -1461,7 +1336,7 @@ export default function AdminMembers() {
                           onClick={(event) => {
                             event.stopPropagation()
                             if (membership.action === 'pay') {
-                              openSubscriptionPaymentPage(member, membership.subscription)
+                              openSubscriptionPaymentPage(member, membership.focusSubscriptionId)
                               return
                             }
 
