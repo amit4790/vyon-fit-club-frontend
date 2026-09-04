@@ -28,18 +28,20 @@ function todayIsoDate(): string {
   return `${year}-${month}-${day}`
 }
 
+/** Gym business timezone — keep FE display locked to IST with the backend. */
+const GYM_TIME_ZONE = 'Asia/Kolkata'
+
 function formatPunchTime(value: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
     return value
   }
-  // Gym device / business timezone (IST). Avoid browser-local drift if admin travels.
   return date.toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: true,
-    timeZone: 'Asia/Kolkata',
+    timeZone: GYM_TIME_ZONE,
   })
 }
 
@@ -57,7 +59,7 @@ function formatPunchDateTime(value: string | null): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Kolkata',
+    timeZone: GYM_TIME_ZONE,
   })
 }
 
