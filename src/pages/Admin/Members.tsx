@@ -235,6 +235,8 @@ export default function AdminMembers() {
   const [expiringUnavailable, setExpiringUnavailable] = useState(false)
   const [isExportingMembers, setIsExportingMembers] = useState(false)
   const [isExportingExpiring, setIsExportingExpiring] = useState(false)
+  const [listMode, setListMode] = useState<'members' | 'expiring'>('members')
+  const [expiringLoadedOnce, setExpiringLoadedOnce] = useState(false)
   const [membershipSnapshotMap, setMembershipSnapshotMap] = useState<Record<number, MemberMembershipSnapshot>>({})
   const [isViewMembershipModalOpen, setIsViewMembershipModalOpen] = useState(false)
   const [viewMembershipLoading, setViewMembershipLoading] = useState(false)
@@ -378,7 +380,6 @@ export default function AdminMembers() {
     setMemberSearch(querySearch)
     setActiveSearch(querySearch)
     loadMembers(pageParam, querySearch, true)
-    loadExpiringSubscriptions(expiringDays)
     void loadActivePushDevice()
   }, [navigate])
 
@@ -600,6 +601,14 @@ export default function AdminMembers() {
       setExpiringPage(1)
       setExpiringTotalPages(0)
       setExpiringUnavailable(true)
+    }
+  }
+
+  const openExpiringList = async () => {
+    setListMode('expiring')
+    if (!expiringLoadedOnce) {
+      await loadExpiringSubscriptions(expiringDays, 1)
+      setExpiringLoadedOnce(true)
     }
   }
 
@@ -1233,12 +1242,14 @@ export default function AdminMembers() {
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Member Management</h2>
             <p className="text-sm text-text-secondary mt-1">
-              Add, search, edit and delete members.
+              {listMode === 'members'
+                ? 'Add, search, edit and delete members.'
+                : 'Review memberships expiring soon and export the full list.'}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {isSuperAdmin && (
+            {listMode === 'members' && isSuperAdmin && (
               <Button
                 size="sm"
                 variant="secondary"
@@ -1251,25 +1262,48 @@ export default function AdminMembers() {
                 Re-sync Devices
               </Button>
             )}
-            {isSuperAdmin && (
+            {listMode === 'members' && isSuperAdmin && (
               <Button size="sm" variant="secondary" onClick={() => navigate('/admin/admins')}>
                 Add Admin
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={isExportingMembers}
-              onClick={() => {
-                void handleExportMembers()
-              }}
-            >
-              {isExportingMembers ? 'Exporting...' : 'Export to Excel'}
-            </Button>
-            <Button size="sm" onClick={openCreateMemberModal}>Add Member</Button>
+            {listMode === 'members' && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={isExportingMembers}
+                onClick={() => {
+                  void handleExportMembers()
+                }}
+              >
+                {isExportingMembers ? 'Exporting...' : 'Export to Excel'}
+              </Button>
+            )}
+            {listMode === 'members' && (
+              <Button size="sm" onClick={openCreateMemberModal}>Add Member</Button>
+            )}
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Button
+            size="sm"
+            variant={listMode === 'members' ? 'primary' : 'secondary'}
+            onClick={() => setListMode('members')}
+          >
+            All Members
+          </Button>
+          <Button
+            size="sm"
+            variant={listMode === 'expiring' ? 'primary' : 'secondary'}
+            onClick={() => void openExpiringList()}
+          >
+            Expiring
+          </Button>
+        </div>
+
+        {listMode === 'members' ? (
+          <>
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <Input
             value={memberSearch}
@@ -1311,113 +1345,6 @@ export default function AdminMembers() {
           </Button>
           <Button size="sm" onClick={handleMemberSearch}>Search</Button>
         </div>
-
-        <div className="mb-4 p-3 rounded-lg border border-border-light bg-bg-secondary/20">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-text-secondary">Expiring Subscriptions</p>
-              <p className="text-xs text-text-secondary">
-                {expiringTotal > 0
-                  ? `${expiringTotal} active subscription(s) expiring in the selected window.`
-                  : 'No active subscriptions expiring in the selected window.'}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={String(expiringDays)}
-                options={[
-                  { value: '7', label: 'Next 7 days' },
-                  { value: '15', label: 'Next 15 days' },
-                  { value: '30', label: 'Next 30 days' },
-                ]}
-                onChange={async (event) => {
-                  const days = Number(event.target.value)
-                  setExpiringDays(days)
-                  await loadExpiringSubscriptions(days, 1)
-                }}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={isExportingExpiring || expiringTotal === 0}
-                onClick={() => void handleExportExpiringSubscriptions()}
-              >
-                {isExportingExpiring ? 'Exporting...' : 'Export Expiring'}
-              </Button>
-            </div>
-          </div>
-          {expiringSubscriptions.length > 0 && (
-            <div className="mt-3 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableHeaderCell>Member</TableHeaderCell>
-                  <TableHeaderCell>Plan</TableHeaderCell>
-                  <TableHeaderCell>Ends</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Open</TableHeaderCell>
-                </TableHeader>
-                <TableBody>
-                  {expiringSubscriptions.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="text-sm text-text-secondary">
-                        <div className="space-y-0.5">
-                          <p className="text-xs text-text-secondary">ID {item.member_id}</p>
-                          <p className="text-text-primary">{item.member_name || '—'}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-text-secondary">
-                        {item.plan_label || `${item.plan_family}${item.plan_variant ? ` (${item.plan_variant})` : ''}`}
-                      </TableCell>
-                      <TableCell className="text-sm text-text-secondary">{item.end_date}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            navigate(`/admin/members/${item.member_id}`)
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {expiringTotalPages > 1 && (
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <p className="text-xs text-text-secondary">
-                    Page {expiringPage} of {expiringTotalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={expiringPage <= 1}
-                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={expiringPage >= expiringTotalPages}
-                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          {expiringUnavailable && (
-            <p className="mt-3 text-xs text-text-secondary">
-              Expiring memberships are unavailable right now. Please try again shortly.
-            </p>
-          )}
-        </div>
-
         {membersLoading ? (
           <p className="text-gray-500 py-8 text-center">Loading members...</p>
         ) : members.length === 0 ? (
@@ -1597,6 +1524,116 @@ export default function AdminMembers() {
               </div>
             </div>
           </>
+        )}
+          </>
+        ) : (
+          <div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold text-text-secondary">Expiring Subscriptions</p>
+                <p className="text-xs text-text-secondary">
+                  {expiringTotal > 0
+                    ? `${expiringTotal} active subscription(s) expiring in the selected window.`
+                    : 'No active subscriptions expiring in the selected window.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  value={String(expiringDays)}
+                  options={[
+                    { value: '7', label: 'Next 7 days' },
+                    { value: '15', label: 'Next 15 days' },
+                    { value: '30', label: 'Next 30 days' },
+                  ]}
+                  onChange={async (event) => {
+                    const days = Number(event.target.value)
+                    setExpiringDays(days)
+                    await loadExpiringSubscriptions(days, 1)
+                    setExpiringLoadedOnce(true)
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={isExportingExpiring || expiringTotal === 0}
+                  onClick={() => void handleExportExpiringSubscriptions()}
+                >
+                  {isExportingExpiring ? 'Exporting...' : 'Export Expiring'}
+                </Button>
+              </div>
+            </div>
+            {expiringSubscriptions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableHeaderCell>Member</TableHeaderCell>
+                    <TableHeaderCell>Plan</TableHeaderCell>
+                    <TableHeaderCell>Ends</TableHeaderCell>
+                    <TableHeaderCell className="text-right">Open</TableHeaderCell>
+                  </TableHeader>
+                  <TableBody>
+                    {expiringSubscriptions.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-sm text-text-secondary">
+                          <div className="space-y-0.5">
+                            <p className="text-xs text-text-secondary">ID {item.member_id}</p>
+                            <p className="text-text-primary">{item.member_name || '—'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-text-secondary">
+                          {item.plan_label || `${item.plan_family}${item.plan_variant ? ` (${item.plan_variant})` : ''}`}
+                        </TableCell>
+                        <TableCell className="text-sm text-text-secondary">{item.end_date}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              navigate(`/admin/members/${item.member_id}`)
+                            }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {expiringTotalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <p className="text-xs text-text-secondary">
+                      Page {expiringPage} of {expiringTotalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={expiringPage <= 1}
+                        onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage - 1)}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={expiringPage >= expiringTotalPages}
+                        onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 py-8 text-center">
+                {expiringUnavailable
+                  ? 'Expiring memberships are unavailable right now. Please try again shortly.'
+                  : 'No expiring subscriptions in this window.'}
+              </p>
+            )}
+          </div>
         )}
       </Card>
 
