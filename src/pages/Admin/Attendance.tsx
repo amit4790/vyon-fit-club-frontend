@@ -127,16 +127,27 @@ export default function AdminAttendance() {
   const handleExportCsv = async () => {
     try {
       setIsExporting(true)
-      const blob = await adminService.exportMonthlyAttendanceCsv(selectedYear, selectedMonth)
+      const blob =
+        view === 'daily'
+          ? await adminService.exportDailyAttendanceCsv(selectedDay)
+          : await adminService.exportMonthlyAttendanceCsv(selectedYear, selectedMonth)
       const url = window.URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = `trainer-attendance-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.csv`
+      anchor.download =
+        view === 'daily'
+          ? `trainer-attendance-${selectedDay}.csv`
+          : `trainer-attendance-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.csv`
       document.body.appendChild(anchor)
       anchor.click()
       anchor.remove()
       window.URL.revokeObjectURL(url)
-      success('Export ready', 'Trainer attendance CSV downloaded')
+      success(
+        'Export ready',
+        view === 'daily'
+          ? 'Daily trainer attendance CSV downloaded'
+          : 'Monthly trainer attendance CSV downloaded'
+      )
     } catch (err: any) {
       const apiError = ApiErrorHandler.parse(err)
       errorToast('Export failed', apiError.message)
@@ -201,11 +212,12 @@ export default function AdminAttendance() {
                   options={yearOptions}
                   onChange={(event) => setSelectedYear(Number(event.target.value))}
                 />
-                <Button size="sm" variant="secondary" isLoading={isExporting} onClick={() => void handleExportCsv()}>
-                  Export CSV
-                </Button>
               </>
             )}
+
+            <Button size="sm" variant="secondary" isLoading={isExporting} onClick={() => void handleExportCsv()}>
+              Export CSV
+            </Button>
 
             <Button size="sm" variant="secondary" onClick={() => void loadData(true)}>
               Refresh

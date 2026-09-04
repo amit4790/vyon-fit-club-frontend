@@ -214,6 +214,18 @@ export const adminService = {
       responseType: 'blob',
     }),
 
+  exportDailyAttendanceCsv: (day: string) =>
+    httpClient.get<Blob>('/admin/attendance/export/daily', {
+      params: { day },
+      responseType: 'blob',
+    }),
+
+  exportExpiringSubscriptionsExcel: (days: number) =>
+    httpClient.get<Blob>('/admin/subscriptions/expiring/export', {
+      params: { days },
+      responseType: 'blob',
+    }),
+
   getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
 
   getPushDevices: () => httpClient.get<PushDeviceListApiResponse>('/device/devices'),
