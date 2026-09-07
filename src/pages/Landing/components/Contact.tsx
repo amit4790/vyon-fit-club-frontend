@@ -11,7 +11,7 @@ export const Contact: React.FC = () => {
     {
       icon: <MapPin size={18} />,
       title: 'Address',
-      value: '301-D, 2nd Floor, Sushant Lok Phase 1, Sector 43, Gurugram – 122002',
+      value: 'Sri Ram Complex, 2nd Floor, Sushant Lok Phase 1, Sector 43, Gurugram – 122002',
     },
     {
       icon: <Phone size={18} />,
@@ -21,7 +21,7 @@ export const Contact: React.FC = () => {
     {
       icon: <Mail size={18} />,
       title: 'Email',
-      value: 'hello@vyonfitclub.com',
+      value: 'vyonfitclub@gmail.com',
     },
     {
       icon: <Clock size={18} />,
