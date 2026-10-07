@@ -4,11 +4,14 @@
  */
 
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import ctaBannerImage from '../../../assets/images/gym/cta-banner.png'
+import { isGymStaff } from '../../../auth/authorization'
+import { useEnquiryModal } from '../../../contexts/EnquiryModalContext'
+import { AuthService } from '../../../services/auth'
 
 export const CTABanner: React.FC = () => {
-  const navigate = useNavigate()
+  const { openEnquiry } = useEnquiryModal()
+  const showLeadForm = !isGymStaff(AuthService.getUserRole())
 
   return (
     <section className="landing-section relative min-h-[22rem] sm:min-h-[24rem] w-full overflow-hidden bg-[#121214]">
@@ -38,20 +41,24 @@ export const CTABanner: React.FC = () => {
           </p>
 
           {/* Action Buttons */}
+          {showLeadForm ? (
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <button
-              onClick={() => navigate('/register')}
+              type="button"
+              onClick={() => openEnquiry({ intent: 'membership' })}
               className="bg-[#8B1E3F] hover:bg-[#8B1E3F]/90 text-white text-sm font-semibold px-6 py-3 rounded-lg transition-all shadow-md"
             >
-              Become a Member
+              Enquire now
             </button>
             <button
-              onClick={() => navigate('/memberships')}
+              type="button"
+              onClick={() => openEnquiry({ intent: 'personal_training' })}
               className="bg-transparent border border-white/30 hover:border-white/80 hover:bg-white/10 text-white text-sm font-semibold px-6 py-3 rounded-lg transition-all"
             >
-              Book a Trial Session
+              Book a free assessment
             </button>
           </div>
+          ) : null}
 
         </div>
       </div>

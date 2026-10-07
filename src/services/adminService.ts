@@ -38,6 +38,10 @@ import {
   AssignMemberToTrainerApiResponse,
   AssignMemberToTrainerPayload,
   UnassignMemberFromTrainerApiResponse,
+  WebsiteEnquiryCountResponse,
+  WebsiteEnquiryListResponse,
+  WebsiteEnquiryRecord,
+  WebsiteEnquiryStatus,
 } from '../types'
 
 export const adminService = {
@@ -227,6 +231,19 @@ export const adminService = {
     }),
 
   getProfile: () => httpClient.get<AdminProfileApiResponse>('/admin/profile'),
+
+  getWebsiteEnquiryCount: () =>
+    httpClient.get<WebsiteEnquiryCountResponse>('/admin/enquiries/count'),
+
+  getWebsiteEnquiries: (status: WebsiteEnquiryStatus | 'all' = 'new') =>
+    httpClient.get<WebsiteEnquiryListResponse>('/admin/enquiries', {
+      params: { status },
+    }),
+
+  updateWebsiteEnquiry: (
+    enquiryId: number,
+    payload: { status?: WebsiteEnquiryStatus; notes?: string | null }
+  ) => httpClient.patch<WebsiteEnquiryRecord>(`/admin/enquiries/${enquiryId}`, payload),
 
   getPushDevices: () => httpClient.get<PushDeviceListApiResponse>('/device/devices'),
 

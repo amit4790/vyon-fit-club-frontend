@@ -64,7 +64,7 @@ export const LandingNavbar: React.FC = () => {
   const menuItems = [
     { label: 'Home', href: '#home' },
     { label: 'About', href: '#about' },
-    { label: 'Memberships', href: '/memberships' },
+    { label: 'Memberships', href: '#memberships' },
     { label: 'Trainers', href: '#trainers' },
     { label: 'Gallery', href: '#gallery' },
     { label: 'Contact', href: '#contact' },
@@ -126,10 +126,10 @@ export const LandingNavbar: React.FC = () => {
             ) : (
               <>
                 <button
-                  onClick={() => navigate('/register')}
+                  onClick={() => handleNavClick('#memberships')}
                   className="px-6 py-2 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
-                  Join Now
+                  Enquire now
                 </button>
                 <button
                   onClick={handleAccountClick}
@@ -182,13 +182,10 @@ export const LandingNavbar: React.FC = () => {
                 ) : (
                   <>
                     <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false)
-                        navigate('/register')
-                      }}
+                      onClick={() => handleNavClick('#memberships')}
                       className="flex-1 px-4 py-3 bg-primary hover:bg-accent text-text-secondary rounded transition-all duration-300 font-semibold text-sm uppercase tracking-wide"
                     >
-                      Join Now
+                      Enquire now
                     </button>
                     <button
                       onClick={handleAccountClick}

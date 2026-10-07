@@ -6,8 +6,13 @@
 import React from 'react'
 import { Check } from 'lucide-react'
 import personalTrainingImage from '../../../assets/images/gym/personal-training.png'
+import { isGymStaff } from '../../../auth/authorization'
+import { useEnquiryModal } from '../../../contexts/EnquiryModalContext'
+import { AuthService } from '../../../services/auth'
 
 export const PersonalTraining: React.FC = () => {
+  const { openEnquiry } = useEnquiryModal()
+  const showLeadForm = !isGymStaff(AuthService.getUserRole())
   const benefits = [
     'Personalized workout plans',
     'One-to-one coaching sessions',
@@ -46,9 +51,15 @@ export const PersonalTraining: React.FC = () => {
             </div>
 
             {/* CTA Button */}
-            <button className="px-5 py-2.5 bg-[#8B1E3F] hover:bg-[#a3234a] text-white text-sm font-semibold rounded-lg transition-colors duration-300 shadow-md">
-              Book Free Assessment
-            </button>
+            {showLeadForm ? (
+              <button
+                type="button"
+                onClick={() => openEnquiry({ intent: 'personal_training' })}
+                className="px-5 py-2.5 bg-[#8B1E3F] hover:bg-[#a3234a] text-white text-sm font-semibold rounded-lg transition-colors duration-300 shadow-md"
+              >
+                Book Free Assessment
+              </button>
+            ) : null}
           </div>
 
           {/* Image Column */}

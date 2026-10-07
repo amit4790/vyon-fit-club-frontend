@@ -39,6 +39,7 @@ export interface AdminDashboardResponse {
   monthly_revenue: number | null;
   expiring_memberships: number | null;
   todays_checkins: number | null;
+  new_enquiries?: number;
   recent_registrations: RecentRegistration[];
 }
 

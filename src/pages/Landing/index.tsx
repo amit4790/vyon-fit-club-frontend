@@ -3,7 +3,9 @@
  * Main landing page component that combines all sections
  */
 
-import React from 'react'
+import React, { useEffect } from 'react'
+import { EnquiryModalProvider } from '../../contexts/EnquiryModalContext'
+import { scrollToSection } from '../../utils/scrollToSection'
 import { LandingNavbar } from './components/Navbar'
 import { Hero } from './components/Hero'
 import { Stats } from './components/Stats'
@@ -20,7 +22,14 @@ import { Contact } from './components/Contact'
 import { LandingFooter } from './components/Footer'
 
 const Landing: React.FC = () => {
+  useEffect(() => {
+    if (window.location.hash === '#memberships') {
+      window.requestAnimationFrame(() => scrollToSection('memberships'))
+    }
+  }, [])
+
   return (
+    <EnquiryModalProvider>
     <div className="w-full bg-bg-primary overflow-hidden">
       {/* Navigation */}
       <LandingNavbar />
@@ -64,6 +73,7 @@ const Landing: React.FC = () => {
       {/* Footer */}
       <LandingFooter />
     </div>
+    </EnquiryModalProvider>
   )
 }
 

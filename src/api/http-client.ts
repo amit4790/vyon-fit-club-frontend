@@ -46,13 +46,20 @@ class HttpClient {
         const apiError = ApiErrorHandler.parse(error);
         ApiErrorHandler.log(apiError);
 
-        // Handle 401 - redirect to login
+        // Handle 401 — only force login on protected app areas (not public marketing).
         if (apiError.status === 401) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('userName');
-          // Redirect to login - can be handled by component or router guard
-          window.location.href = '/login';
+          const path = window.location.pathname;
+          const isProtectedArea =
+            path.startsWith('/admin') ||
+            path.startsWith('/trainer') ||
+            path.startsWith('/member') ||
+            path === '/payment';
+          if (isProtectedArea) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            window.location.href = '/login';
+          }
         }
 
         return Promise.reject(apiError);

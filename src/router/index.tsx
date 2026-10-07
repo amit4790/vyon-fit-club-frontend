@@ -6,10 +6,10 @@ import { createBrowserRouter, RouterProvider, Outlet, Navigate } from 'react-rou
 import { ScrollToTop } from '../components/ScrollToTop'
 import Landing from '../pages/Landing'
 import Registration from '../pages/Registration'
-import Memberships from '../pages/Memberships'
 import Payment from '../pages/Payment'
 import Login from '../pages/Login'
 import Admin from '../pages/Admin'
+import AdminEnquiries from '../pages/Admin/Enquiries'
 import AdminAttendance from '../pages/Admin/Attendance'
 import AdminMembers from '../pages/Admin/Members'
 import AdminMembershipPlans from '../pages/Admin/MembershipPlans'
@@ -41,7 +41,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/memberships',
-        element: <Memberships />,
+        element: <Navigate to="/#memberships" replace />,
       },
       {
         path: '/payment',
@@ -57,6 +57,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="dashboard" replace /> },
           { path: 'dashboard', element: <Admin /> },
+          { path: 'enquiries', element: <AdminEnquiries /> },
           { path: 'members', element: <AdminMembers /> },
           { path: 'members/:memberId', element: <AdminMemberDetails /> },
           { path: 'membership-plans', element: <AdminMembershipPlans /> },

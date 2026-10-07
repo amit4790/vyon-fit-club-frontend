@@ -1,8 +1,9 @@
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, CalendarCheck2, ChevronDown, CreditCard, FileBarChart2, LogOut, Settings, User, UserCog, Users, WalletCards } from 'lucide-react'
+import { BarChart3, CalendarCheck2, ChevronDown, CreditCard, FileBarChart2, Inbox, LogOut, Settings, User, UserCog, Users, WalletCards } from 'lucide-react'
 import { USER_ROLES } from '../auth/roles'
 import { AuthService } from '../services/auth'
+import { adminService } from '../services/adminService'
 import { toTitleCase } from '../utils/format'
 import vyonLogo from '../assets/images/logo/vyon-logo.jpg'
 
@@ -23,6 +24,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <BarChart3 size={18} /> },
+  { label: 'Enquiries', path: '/admin/enquiries', icon: <Inbox size={18} /> },
   { label: 'Members', path: '/admin/members', icon: <Users size={18} /> },
   { label: 'Trainers', path: '/admin/trainers', icon: <UserCog size={18} /> },
   { label: 'Membership Plans', path: '/admin/membership-plans', icon: <WalletCards size={18} /> },
@@ -38,9 +40,11 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const isSuperAdmin = AuthService.getUserRole() === USER_ROLES.SUPER_ADMIN
 
+  const [newEnquiryCount, setNewEnquiryCount] = useState(0)
+
   const navItems: NavItem[] = isSuperAdmin
     ? [
-        ...NAV_ITEMS.slice(0, 7),
+        ...NAV_ITEMS,
         { label: 'Admins', path: '/admin/admins', icon: <User size={18} /> },
         { label: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
       ]
@@ -51,6 +55,42 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
   }
 
   const displayUserName = toTitleCase(userName || 'Admin')
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadCount = () => {
+      adminService
+        .getWebsiteEnquiryCount()
+        .then((response) => {
+          if (!cancelled) {
+            setNewEnquiryCount(response.new_count)
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setNewEnquiryCount(0)
+          }
+        })
+    }
+
+    loadCount()
+
+    const handleEnquiriesChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ newCount?: number }>).detail
+      if (typeof detail?.newCount === 'number') {
+        setNewEnquiryCount(detail.newCount)
+        return
+      }
+      loadCount()
+    }
+
+    window.addEventListener('vyon:enquiries-changed', handleEnquiriesChanged)
+    return () => {
+      cancelled = true
+      window.removeEventListener('vyon:enquiries-changed', handleEnquiriesChanged)
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -107,6 +147,11 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
               >
                 {item.icon}
                 <span>{item.label}</span>
+                {item.path === '/admin/enquiries' && newEnquiryCount > 0 ? (
+                  <span className={`ml-auto min-w-5 rounded-full px-1.5 py-0.5 text-center text-[11px] font-semibold ${active ? 'bg-white/20 text-text-secondary' : 'bg-primary text-text-secondary'}`}>
+                    {newEnquiryCount}
+                  </span>
+                ) : null}
               </Link>
             )
           })}

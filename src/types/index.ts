@@ -483,3 +483,26 @@ export interface DeviceSyncApiResponse {
   members_synced?: number
   user_id?: number
 }
+
+export type WebsiteEnquiryStatus = 'new' | 'contacted' | 'closed'
+
+export interface WebsiteEnquiryRecord {
+  id: number
+  full_name: string
+  phone_number: string
+  email: string | null
+  intent: string
+  plan_interest: string | null
+  notes: string | null
+  status: WebsiteEnquiryStatus
+  created_at: string
+}
+
+export interface WebsiteEnquiryListResponse {
+  data: WebsiteEnquiryRecord[]
+  new_count: number
+}
+
+export interface WebsiteEnquiryCountResponse {
+  new_count: number
+}

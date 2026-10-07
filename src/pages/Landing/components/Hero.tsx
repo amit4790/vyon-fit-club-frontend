@@ -5,16 +5,17 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { scrollToSection } from '../../../utils/scrollToSection'
+import { useEnquiryModal } from '../../../contexts/EnquiryModalContext'
 import { Star } from 'lucide-react'
-import { AuthService } from '../../../api/api'
+import { isGymStaff } from '../../../auth/authorization'
+import { AuthService } from '../../../services/auth'
 import heroInteriorImage from '../../../assets/images/gym/hero-interior.png'
 
 export const Hero: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false)
-  const navigate = useNavigate()
-  const role = AuthService.getUserRole()
-  const hideLandingCtas = role === 'SUPER_ADMIN'
+  const { openEnquiry } = useEnquiryModal()
+  const hideLeadForm = isGymStaff(AuthService.getUserRole())
 
   useEffect(() => {
     setIsLoaded(true)
@@ -61,29 +62,29 @@ export const Hero: React.FC = () => {
           </p>
         </div>
 
-        {!hideLandingCtas && (
-          <div
+        <div
             className={`flex flex-col sm:flex-row gap-4 justify-center transform transition-all duration-1000 ${
               isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             }`}
             style={{ transitionDelay: '400ms', marginBottom: '20px' }}
           >
+            {!hideLeadForm && (
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => openEnquiry({ intent: 'membership' })}
               className="group relative px-8 py-4 md:px-10 md:py-5 bg-primary hover:bg-accent text-text-secondary font-semibold text-base rounded-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
             >
-              Start Your Fitness Journey
+              Enquire now
               <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 rounded-lg transition-opacity" />
             </button>
+            )}
             <button
-              onClick={() => navigate('/memberships')}
+              onClick={() => scrollToSection('memberships')}
               className="group relative px-8 py-4 md:px-10 md:py-5 border-2 border-white text-text-secondary font-semibold text-base rounded-lg hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
             >
-              Explore Memberships
+              View membership plans
               <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 rounded-lg transition-opacity" />
             </button>
           </div>
-        )}
 
         {/* Trust Indicators */}
         <div

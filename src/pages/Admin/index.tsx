@@ -85,6 +85,15 @@ export default function AdminDashboard() {
       onLogout={handleLogout}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <button type="button" onClick={() => navigate('/admin/enquiries')} className="text-left">
+          <Card className="p-5 h-full hover:shadow-card-hover transition-shadow">
+            <div className="flex flex-col">
+              <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">New Enquiries</span>
+              <span className="text-[2rem] font-semibold text-primary mt-2 leading-none">{formatNumber(dashboard.new_enquiries ?? 0)}</span>
+            </div>
+          </Card>
+        </button>
+
         <Card className="p-5">
           <div className="flex flex-col">
             <span className="text-text-secondary text-xs uppercase tracking-wide font-medium">Total Members</span>
