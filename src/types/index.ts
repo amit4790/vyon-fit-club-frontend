@@ -179,10 +179,13 @@ export interface TrainerDeviceSyncApiResponse {
   commands_queued: number
 }
 
+export type AttendancePersonType = 'trainer' | 'member'
+
 export interface DailyAttendanceRow {
   person_id: number
   person_name: string
   specialization?: string | null
+  phone_number?: string | null
   pin: number
   punched_at: string
   is_late: boolean
@@ -198,6 +201,7 @@ export interface MonthlyAttendanceRow {
   person_id: number
   person_name: string
   specialization?: string | null
+  phone_number?: string | null
   days_present: number
   on_time_days: number
   late_days: number
@@ -209,6 +213,21 @@ export interface MonthlyAttendanceApiResponse {
   year: number
   month: number
   data: MonthlyAttendanceRow[]
+}
+
+export interface AttendancePunchDetailRow {
+  punched_at: string
+  pin: number
+  is_late: boolean
+}
+
+export interface DailyAttendanceDetailApiResponse {
+  message: string
+  date: string
+  person_type: AttendancePersonType
+  person_id: number
+  person_name: string
+  data: AttendancePunchDetailRow[]
 }
 
 export interface AdminUserRecord {

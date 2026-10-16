@@ -32,7 +32,9 @@ import {
   TrainerDetailApiResponse,
   PushDeviceListApiResponse,
   DeviceSyncApiResponse,
+  AttendancePersonType,
   DailyAttendanceApiResponse,
+  DailyAttendanceDetailApiResponse,
   MonthlyAttendanceApiResponse,
   AssignableMembersApiResponse,
   AssignMemberToTrainerApiResponse,
@@ -204,23 +206,34 @@ export const adminService = {
       target_revenue: targetRevenue,
     }),
 
-  getDailyAttendance: (day: string) =>
-    httpClient.get<DailyAttendanceApiResponse>('/admin/attendance/daily', { params: { day } }),
-
-  getMonthlyAttendance: (year: number, month: number) =>
-    httpClient.get<MonthlyAttendanceApiResponse>('/admin/attendance/monthly', {
-      params: { year, month },
+  getDailyAttendance: (day: string, personType: AttendancePersonType = 'trainer') =>
+    httpClient.get<DailyAttendanceApiResponse>('/admin/attendance/daily', {
+      params: { day, person_type: personType },
     }),
 
-  exportMonthlyAttendanceCsv: (year: number, month: number) =>
+  getDailyAttendanceDetail: (
+    day: string,
+    personType: AttendancePersonType,
+    personId: number
+  ) =>
+    httpClient.get<DailyAttendanceDetailApiResponse>('/admin/attendance/daily/detail', {
+      params: { day, person_type: personType, person_id: personId },
+    }),
+
+  getMonthlyAttendance: (year: number, month: number, personType: AttendancePersonType = 'trainer') =>
+    httpClient.get<MonthlyAttendanceApiResponse>('/admin/attendance/monthly', {
+      params: { year, month, person_type: personType },
+    }),
+
+  exportMonthlyAttendanceCsv: (year: number, month: number, personType: AttendancePersonType = 'trainer') =>
     httpClient.get<Blob>('/admin/attendance/export', {
-      params: { year, month },
+      params: { year, month, person_type: personType },
       responseType: 'blob',
     }),
 
-  exportDailyAttendanceCsv: (day: string) =>
+  exportDailyAttendanceCsv: (day: string, personType: AttendancePersonType = 'trainer') =>
     httpClient.get<Blob>('/admin/attendance/export/daily', {
-      params: { day },
+      params: { day, person_type: personType },
       responseType: 'blob',
     }),
 
