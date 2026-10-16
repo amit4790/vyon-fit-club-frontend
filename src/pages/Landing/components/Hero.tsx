@@ -24,7 +24,7 @@ export const Hero: React.FC = () => {
   return (
     <section
       id="home"
-      className="relative h-screen w-full overflow-hidden"
+      className="relative min-h-[100dvh] w-full overflow-hidden"
     >
       {/* Background Image with fade-in animation */}
       <div
@@ -43,11 +43,7 @@ export const Hero: React.FC = () => {
       {/* Content Container - flex column fills from below logo to bottom edge */}
       {/* Content Container - flex column, scroll indicator removed */}
       <div
-        className="absolute inset-x-0 mx-auto flex max-w-5xl flex-col items-center justify-center px-6"
-        style={{
-          top: '52%',
-          bottom: '40px',
-        }}
+        className="absolute inset-x-0 top-[45%] sm:top-[52%] bottom-6 sm:bottom-10 mx-auto flex max-w-5xl flex-col items-center justify-center px-4 sm:px-6"
       >
         {/* Tagline */}
         <div

@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '../../components/Table'
 import { ToastContainer, useToast } from '../../components/Toast'
+import { AdminListCard } from '../../components/admin/AdminListCard'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import {
@@ -237,7 +238,7 @@ export default function AdminAttendance() {
       userName={userName}
       onLogout={handleLogout}
     >
-      <Card className="p-5 mb-4">
+      <Card className="p-4 sm:p-5 mb-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">{personLabel} attendance</h2>
@@ -246,7 +247,7 @@ export default function AdminAttendance() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 w-full xl:w-auto xl:flex xl:flex-wrap xl:items-end">
             <Select
               label="People"
               value={personType}
@@ -317,7 +318,7 @@ export default function AdminAttendance() {
           <p className="text-center text-text-secondary">Loading attendance...</p>
         </Card>
       ) : view === 'daily' ? (
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           {filteredDailyRows.length === 0 ? (
             <p className="text-center text-text-secondary py-8">
               {dailyRows.length === 0
@@ -325,6 +326,27 @@ export default function AdminAttendance() {
                 : 'No matches for your search.'}
             </p>
           ) : (
+            <>
+            <div className="lg:hidden space-y-3">
+              {filteredDailyRows.map((row) => (
+                <AdminListCard
+                  key={`${row.person_id}-${row.punched_at}`}
+                  title={row.person_name}
+                  subtitle={`PIN ${row.pin}`}
+                  onClick={() => void openDayDetail(row)}
+                  badges={
+                    personType === 'trainer' ? (
+                      <span className="text-xs text-text-secondary">{row.is_late ? 'Late' : 'On time'}</span>
+                    ) : undefined
+                  }
+                >
+                  <p>First check-in: {formatPunchTime(row.punched_at)}</p>
+                  {personType === 'member' && row.phone_number ? <p>{row.phone_number}</p> : null}
+                  {personType === 'trainer' && row.specialization ? <p>{row.specialization}</p> : null}
+                </AdminListCard>
+              ))}
+            </div>
+            <div className="hidden lg:block">
             <Table>
               <TableHeader>
                 <TableHeaderCell>{personLabel}</TableHeaderCell>
@@ -359,10 +381,12 @@ export default function AdminAttendance() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </Card>
       ) : (
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           {filteredMonthlyRows.length === 0 ? (
             <p className="text-center text-text-secondary py-8">
               {monthlyRows.length === 0
@@ -370,6 +394,24 @@ export default function AdminAttendance() {
                 : 'No matches for your search.'}
             </p>
           ) : (
+            <>
+            <div className="lg:hidden space-y-3">
+              {filteredMonthlyRows.map((row) => (
+                <AdminListCard
+                  key={row.person_id}
+                  title={row.person_name}
+                  subtitle={
+                    personType === 'trainer'
+                      ? row.specialization || undefined
+                      : row.phone_number || undefined
+                  }
+                >
+                  <p>Days present: {row.days_present}</p>
+                  <p>Last check-in: {formatPunchDateTime(row.last_check_in)}</p>
+                </AdminListCard>
+              ))}
+            </div>
+            <div className="hidden lg:block">
             <Table>
               <TableHeader>
                 <TableHeaderCell>{personLabel}</TableHeaderCell>
@@ -396,6 +438,8 @@ export default function AdminAttendance() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </Card>
       )}

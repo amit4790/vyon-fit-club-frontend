@@ -97,7 +97,7 @@ export default function AdminReports() {
       onLogout={handleLogout}
     >
       <Card className="p-5 mb-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-text-secondary">Summary Report</h2>
             <p className="text-sm text-text-secondary mt-1">

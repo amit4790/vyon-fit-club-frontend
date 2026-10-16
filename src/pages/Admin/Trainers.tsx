@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '../../components/Table'
 import { ToastContainer, useToast } from '../../components/Toast'
+import { AdminListCard } from '../../components/admin/AdminListCard'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { TrainerRecord } from '../../types'
@@ -203,7 +204,7 @@ export default function AdminTrainers() {
             <h2 className="text-lg font-semibold text-text-secondary">Trainer Management</h2>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <Button
               size="sm"
               variant="secondary"
@@ -221,6 +222,56 @@ export default function AdminTrainers() {
         ) : trainers.length === 0 ? (
           <p className="text-gray-500 py-8 text-center">No trainers found</p>
         ) : (
+          <>
+          <div className="lg:hidden space-y-3">
+            {trainers.map((trainer) => (
+              <AdminListCard
+                key={trainer.id}
+                title={trainer.full_name}
+                subtitle={trainer.email}
+                onClick={() => navigate(`/admin/trainers/${trainer.id}`)}
+                badges={
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                      trainer.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {trainer.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                }
+                actions={
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        openEditTrainerModal(trainer)
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        handleDeleteTrainer(trainer)
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                }
+              >
+                <p>Phone: {trainer.phone_number || '—'}</p>
+                <p>Device PIN: {trainerDevicePin(trainer.id)}</p>
+                <p>PT members: {trainer.assigned_member_count ?? 0}</p>
+              </AdminListCard>
+            ))}
+          </div>
+
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableHeaderCell>Name</TableHeaderCell>
@@ -284,6 +335,8 @@ export default function AdminTrainers() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
       </Card>
 

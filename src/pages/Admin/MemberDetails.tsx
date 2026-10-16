@@ -95,7 +95,7 @@ export default function AdminMemberDetails() {
         <Card className="p-8"><p className="text-text-secondary">Member not found.</p></Card>
       ) : (
         <div className="space-y-4">
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5 overflow-hidden">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Profile</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <p><span className="text-text-secondary">Member ID:</span> {member.id}</p>
@@ -107,12 +107,13 @@ export default function AdminMemberDetails() {
             </div>
           </Card>
 
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5 overflow-hidden">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Memberships</h2>
             {subscriptions.length === 0 ? (
               <p className="text-sm text-text-secondary">No memberships found.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto -mx-1 px-1">
+              <Table frozenColumnCount={1}>
                 <TableHeader>
                   <TableHeaderCell>Plan</TableHeaderCell>
                   <TableHeaderCell>Duration</TableHeaderCell>
@@ -134,15 +135,17 @@ export default function AdminMemberDetails() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </Card>
 
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5 overflow-hidden">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Payment History</h2>
             {invoices.length === 0 ? (
               <p className="text-sm text-text-secondary">No payments found.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto -mx-1 px-1">
+              <Table frozenColumnCount={1}>
                 <TableHeader>
                   <TableHeaderCell>Invoice</TableHeaderCell>
                   <TableHeaderCell>Date</TableHeaderCell>
@@ -160,10 +163,11 @@ export default function AdminMemberDetails() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </Card>
 
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Invoices</h2>
             {invoices.length === 0 ? (
               <p className="text-sm text-text-secondary">No invoices available.</p>

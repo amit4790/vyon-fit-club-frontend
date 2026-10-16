@@ -28,6 +28,7 @@ import {
   SubscriptionRecord,
 } from '../../types'
 import { formatMembershipPlanName } from '../../utils/format'
+import { AdminListCard } from '../../components/admin/AdminListCard'
 import AdminShell from '../../layouts/AdminShell'
 
 const ASSIGNABLE_MEMBERSHIP_LABELS = [
@@ -1106,6 +1107,88 @@ export default function AdminMembers() {
     return status.charAt(0).toUpperCase() + status.slice(1)
   }
 
+  const renderMembershipSummary = (membership: MembershipListSnapshot) => {
+    if (membership.activeMemberships.length > 0) {
+      return membership.activeMemberships.map((item) => (
+        <p key={item.subscription_id}>
+          {formatMembershipPlanName(item.plan_label)} · Expires {formatDisplayDate(item.end_date)}
+        </p>
+      ))
+    }
+    if (membership.currentPlanLabel) {
+      return (
+        <p>
+          {formatMembershipPlanName(membership.currentPlanLabel)} ·{' '}
+          {membership.membershipStatus !== 'expired'
+            ? `Expires ${formatDisplayDate(membership.expiryDate)}`
+            : `Expired ${formatDisplayDate(membership.expiryDate)}`}
+        </p>
+      )
+    }
+    return <p>No membership</p>
+  }
+
+  const renderMemberActions = (member: MemberRecord, membership: MembershipListSnapshot) => (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={(event) => {
+          event.stopPropagation()
+          openEditMemberModal(member)
+        }}
+      >
+        Edit
+      </Button>
+      {!isMemberDeviceSynced(member) && (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={syncingMemberId === member.id}
+          onClick={(event) => {
+            event.stopPropagation()
+            void handleSyncMemberToDevice(member)
+          }}
+        >
+          {syncingMemberId === member.id ? 'Syncing…' : 'Sync'}
+        </Button>
+      )}
+      <Button
+        size="sm"
+        onClick={(event) => {
+          event.stopPropagation()
+          if (membership.action === 'pay') {
+            openSubscriptionPaymentPage(member, membership.focusSubscriptionId)
+            return
+          }
+          if (membership.action === 'view') {
+            openViewMembershipModal(member)
+            return
+          }
+          openAssignSubscriptionModal(member)
+        }}
+      >
+        {membership.action === 'pay'
+          ? 'Record Payment'
+          : membership.action === 'view'
+            ? 'View'
+            : membership.action === 'renew'
+              ? 'Renew'
+              : 'Assign'}
+      </Button>
+      <Button
+        size="sm"
+        className="bg-primary text-text-secondary hover:bg-primary-dark focus:ring-primary"
+        onClick={(event) => {
+          event.stopPropagation()
+          handleDeleteMember(member)
+        }}
+      >
+        Delete
+      </Button>
+    </>
+  )
+
   const userInfo = AuthService.getUserInfo()
   const userName = userInfo?.name || 'Admin'
   const isSuperAdmin = userInfo?.role === USER_ROLES.SUPER_ADMIN
@@ -1128,7 +1211,7 @@ export default function AdminMembers() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto md:justify-end">
             {listMode === 'members' && isSuperAdmin && (
               <Button
                 size="sm"
@@ -1184,7 +1267,8 @@ export default function AdminMembers() {
 
         {listMode === 'members' ? (
           <>
-        <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4">
+          <div className="w-full sm:flex-1 min-w-[12rem]">
           <Input
             value={memberSearch}
             onChange={(event) => setMemberSearch(event.target.value)}
@@ -1196,6 +1280,7 @@ export default function AdminMembers() {
               }
             }}
           />
+          </div>
           <Select
             value={membershipStatusFilter}
             options={[
@@ -1223,7 +1308,7 @@ export default function AdminMembers() {
           >
             {sortByExpiry ? 'Sorted by Expiry' : 'Sort by Expiry'}
           </Button>
-          <Button size="sm" onClick={handleMemberSearch}>Search</Button>
+          <Button size="sm" className="w-full sm:w-auto" onClick={handleMemberSearch}>Search</Button>
         </div>
         {membersLoading ? (
           <p className="text-gray-500 py-8 text-center">Loading members...</p>
@@ -1231,6 +1316,37 @@ export default function AdminMembers() {
           <p className="text-gray-500 py-8 text-center">No members found</p>
         ) : (
           <>
+            <div className="lg:hidden space-y-3 mb-4">
+              {members.map((member) => {
+                const membership = membershipSnapshotFromMember(member)
+                const deviceBadge = deviceSyncBadge(member)
+                return (
+                  <AdminListCard
+                    key={member.id}
+                    title={member.full_name}
+                    subtitle={`ID ${member.id} · ${member.mobile_number}`}
+                    onClick={() => navigate(`/admin/members/${member.id}`)}
+                    badges={
+                      <>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${membershipStatusBadge(membership.membershipStatus)}`}
+                        >
+                          {membershipStatusLabel(membership.membershipStatus)}
+                        </span>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${deviceBadge.className}`}>
+                          {deviceBadge.label}
+                        </span>
+                      </>
+                    }
+                    actions={renderMemberActions(member, membership)}
+                  >
+                    {renderMembershipSummary(membership)}
+                  </AdminListCard>
+                )
+              })}
+            </div>
+
+            <div className="hidden lg:block">
             <Table>
               <TableHeader>
                 <TableHeaderCell>Member</TableHeaderCell>
@@ -1374,8 +1490,9 @@ export default function AdminMembers() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4">
               <p className="text-sm text-text-secondary">
                 Showing page {pagination.page} of {Math.max(pagination.total_pages, 1)} ({pagination.total_items} members)
               </p>
@@ -1438,7 +1555,31 @@ export default function AdminMembers() {
               </div>
             </div>
             {expiringSubscriptions.length > 0 ? (
-              <div className="overflow-x-auto">
+              <>
+              <div className="lg:hidden space-y-3 mb-4">
+                {expiringSubscriptions.map((item) => (
+                  <AdminListCard
+                    key={item.id}
+                    title={item.member_name || `Member #${item.member_id}`}
+                    subtitle={`ID ${item.member_id}`}
+                    actions={
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => navigate(`/admin/members/${item.member_id}`)}
+                      >
+                        View
+                      </Button>
+                    }
+                  >
+                    <p>
+                      {item.plan_label || `${item.plan_family}${item.plan_variant ? ` (${item.plan_variant})` : ''}`}
+                    </p>
+                    <p>Ends: {item.end_date}</p>
+                  </AdminListCard>
+                ))}
+              </div>
+              <div className="hidden lg:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableHeaderCell>Member</TableHeaderCell>
@@ -1475,32 +1616,33 @@ export default function AdminMembers() {
                     ))}
                   </TableBody>
                 </Table>
-                {expiringTotalPages > 1 && (
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <p className="text-xs text-text-secondary">
-                      Page {expiringPage} of {expiringTotalPages}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={expiringPage <= 1}
-                        onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage - 1)}
-                      >
-                        Previous
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={expiringPage >= expiringTotalPages}
-                        onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage + 1)}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
+              {expiringTotalPages > 1 && (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-text-secondary">
+                    Page {expiringPage} of {expiringTotalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={expiringPage <= 1}
+                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={expiringPage >= expiringTotalPages}
+                      onClick={() => void loadExpiringSubscriptions(expiringDays, expiringPage + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+              </>
             ) : (
               <p className="text-gray-500 py-8 text-center">
                 {expiringUnavailable

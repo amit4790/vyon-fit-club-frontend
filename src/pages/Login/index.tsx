@@ -85,7 +85,7 @@ export default function Login() {
     <div className="min-h-screen bg-bg-primary flex flex-col">
       {/* Header with Logo */}
       <header className="border-b border-border-light">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
@@ -103,7 +103,7 @@ export default function Login() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-12 px-6">
+      <main className="flex-1 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6">
         <div className="w-full max-w-lg">
           {/* Toast Notification */}
           {toast.show && (
@@ -119,7 +119,7 @@ export default function Login() {
           )}
 
           {/* Login Card */}
-          <div className="bg-bg-card rounded-xl border border-border-light p-8">
+          <div className="bg-bg-card rounded-xl border border-border-light p-6 sm:p-8">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-text-primary mb-1">

@@ -48,6 +48,19 @@ export const Table: React.FC<TableProps> = ({
   const [columnLefts, setColumnLefts] = useState<number[]>([])
   const [topScrollWidth, setTopScrollWidth] = useState(0)
   const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false)
+  const [isCompactViewport, setIsCompactViewport] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1023px)')
+    const update = () => setIsCompactViewport(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  const effectiveFrozenColumnCount = isCompactViewport
+    ? Math.min(1, frozenColumnCount)
+    : frozenColumnCount
 
   const registerHeaderCell = useCallback((columnIndex: number, node: HTMLTableCellElement | null) => {
     headerCellRefs.current[columnIndex] = node
@@ -66,7 +79,7 @@ export const Table: React.FC<TableProps> = ({
     setTopScrollWidth(scrollWidth)
     setHasHorizontalOverflow(nextHasOverflow)
 
-    const frozenCount = Math.min(frozenColumnCount, headerCellRefs.current.length)
+    const frozenCount = Math.min(effectiveFrozenColumnCount, headerCellRefs.current.length)
     const nextColumnLefts: number[] = []
     let currentLeft = 0
 
@@ -85,7 +98,7 @@ export const Table: React.FC<TableProps> = ({
 
       return nextColumnLefts
     })
-  }, [frozenColumnCount])
+  }, [effectiveFrozenColumnCount])
 
   useEffect(() => {
     const wrapper = wrapperRef.current
@@ -159,11 +172,11 @@ export const Table: React.FC<TableProps> = ({
   const contextValue = useMemo<TableContextValue>(
     () => ({
       columnLefts,
-      frozenColumnCount,
+      frozenColumnCount: effectiveFrozenColumnCount,
       stickyHeader,
       registerHeaderCell,
     }),
-    [columnLefts, frozenColumnCount, registerHeaderCell, stickyHeader]
+    [columnLefts, effectiveFrozenColumnCount, registerHeaderCell, stickyHeader]
   )
 
   return (

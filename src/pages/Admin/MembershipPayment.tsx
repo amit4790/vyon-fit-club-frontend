@@ -321,7 +321,7 @@ export default function MembershipPayment() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Card className="xl:col-span-2 p-5">
+          <Card className="xl:col-span-2 p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Payment Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -455,7 +455,7 @@ export default function MembershipPayment() {
             </div>
           </Card>
 
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Live Calculation</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">

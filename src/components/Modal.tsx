@@ -33,11 +33,11 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black bg-opacity-50 animate-fade-in print:static print:overflow-visible print:bg-transparent">
-      <div className="min-h-full flex items-start justify-center p-4 sm:py-8 print:min-h-0 print:p-0">
-        <div className={`${sizes[size]} w-full animate-slide-up print:max-w-none print:animate-none`}>
-          <div className="bg-bg-card border border-border-light rounded-lg shadow-elevated flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden print:max-h-none print:rounded-none print:border-0 print:bg-transparent print:shadow-none sm:max-h-[calc(100vh-4rem)]">
+      <div className="min-h-full flex items-end sm:items-start justify-center p-0 sm:p-4 sm:py-8 print:min-h-0 print:p-0">
+        <div className={`${sizes[size]} w-full animate-slide-up print:max-w-none print:animate-none sm:rounded-lg`}>
+          <div className="bg-bg-card border border-border-light rounded-t-2xl sm:rounded-lg shadow-elevated flex max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden print:max-h-none print:rounded-none print:border-0 print:bg-transparent print:shadow-none sm:max-h-[calc(100vh-4rem)]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border-light p-6 print:hidden">
+          <div className="flex items-center justify-between border-b border-border-light p-4 sm:p-6 print:hidden">
             <h2 className="card-title">{title}</h2>
             <button
               onClick={onClose}
@@ -48,10 +48,10 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto p-6 print:overflow-visible print:p-0">{children}</div>
+          <div className="overflow-y-auto p-4 sm:p-6 print:overflow-visible print:p-0">{children}</div>
 
           {/* Footer */}
-          {footer && <div className="border-t border-border-light p-6 print:hidden">{footer}</div>}
+          {footer && <div className="border-t border-border-light p-4 sm:p-6 print:hidden">{footer}</div>}
         </div>
       </div>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react'
+import { useMediaQuery } from '../../../hooks/useMediaQuery'
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { Avatar } from '../../../components/Avatar'
 
@@ -101,10 +102,11 @@ export const Testimonials: React.FC = () => {
     setActiveIndex((prev) => (prev + 1) % testimonials.length)
   }
 
-  // Always gets 3 items wrapping around cleanly
-  const visibleTestimonials = [0, 1, 2].map((offset) => {
-    return testimonials[(activeIndex + offset) % testimonials.length]
-  })
+  const isMobile = useMediaQuery('(max-width: 767px)')
+
+  const visibleTestimonials = isMobile
+    ? [testimonials[activeIndex]]
+    : [0, 1, 2].map((offset) => testimonials[(activeIndex + offset) % testimonials.length])
 
   return (
     <section className="landing-section bg-[#161618] text-white">

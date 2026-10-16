@@ -91,7 +91,7 @@ export default function Registration() {
 
       {/* Main Content */}
       <main className="relative pt-20 pb-12">
-        <div className="max-w-lg mx-auto px-6">
+        <div className="max-w-lg mx-auto px-4 sm:px-6">
           {/* Back Button */}
           <button
             onClick={() => navigate('/')}

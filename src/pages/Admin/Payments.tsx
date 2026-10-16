@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '../../components/Table'
 import { ToastContainer, useToast } from '../../components/Toast'
+import { AdminListCard } from '../../components/admin/AdminListCard'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { InvoiceRecord, InvoiceStatus } from '../../types'
@@ -197,13 +198,14 @@ export default function AdminPayments() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Select
+              className="w-full sm:w-auto min-w-[10rem]"
               value={statusFilter}
               options={STATUS_OPTIONS}
               onChange={(event) => setStatusFilter(event.target.value as '' | InvoiceStatus)}
             />
-            <Button size="sm" onClick={handleApplyFilters}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={handleApplyFilters}>
               Apply
             </Button>
           </div>
@@ -215,6 +217,56 @@ export default function AdminPayments() {
           <p className="py-8 text-center text-text-secondary">No invoices found</p>
         ) : (
           <>
+            <div className="lg:hidden space-y-3 mb-4">
+              {invoices.map((invoice) => {
+                const outstanding =
+                  invoice.outstanding_balance ??
+                  Math.max((invoice.final_amount_received ?? invoice.amount) - (invoice.amount_paid_today ?? 0), 0)
+                return (
+                  <AdminListCard
+                    key={invoice.id}
+                    title={`#${invoice.id} · ${invoice.member_name}`}
+                    subtitle={invoice.member_phone || undefined}
+                    badges={
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass(invoice.status)}`}>
+                        {statusLabel(invoice.status)}
+                      </span>
+                    }
+                    actions={
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={invoice.status === 'paid' || updatingInvoiceId === invoice.id}
+                          onClick={() => handleMarkPaid(invoice.id)}
+                        >
+                          Record Payment
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={updatingInvoiceId === invoice.id}
+                          onClick={() => handleResend(invoice.id)}
+                        >
+                          Resend
+                        </Button>
+                      </>
+                    }
+                  >
+                    <p>{formatMembershipPlanName(invoice.plan_label)}</p>
+                    <p>
+                      Final: INR {invoice.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p>
+                      Outstanding: INR {outstanding.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p>Issued: {formatDate(invoice.issued_at)}</p>
+                  </AdminListCard>
+                )
+              })}
+            </div>
+
+            <div className="hidden lg:block">
             <Table>
               <TableHeader>
                 <TableHeaderCell>ID</TableHeaderCell>
@@ -275,8 +327,9 @@ export default function AdminPayments() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-text-secondary">
                 Showing page {page} of {Math.max(totalPages, 1)} ({totalItems} invoices)
               </p>
