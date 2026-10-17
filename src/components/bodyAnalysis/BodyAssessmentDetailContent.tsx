@@ -24,9 +24,9 @@ function MetricGrid({ keys, record }: { keys: readonly { key: string }[]; record
   )
 }
 
-export function BodyAssessmentDetailContent({ record }: { record: BodyAssessmentRecord }) {
-  const bmi = record.metrics.find((m) => m.metric_key === 'bmi')
+const BODY_COMPOSITION_KEYS = [...MACHINE_METRIC_FIELDS, { key: 'bmi' }] as const
 
+export function BodyAssessmentDetailContent({ record }: { record: BodyAssessmentRecord }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-text-secondary">
@@ -36,12 +36,7 @@ export function BodyAssessmentDetailContent({ record }: { record: BodyAssessment
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-text-secondary">Body composition</h2>
-        <MetricGrid keys={MACHINE_METRIC_FIELDS} record={record} />
-        {bmi ? (
-          <p className="text-sm">
-            <span className="text-text-secondary">BMI:</span> {formatMetricValue('bmi', bmi.value)}
-          </p>
-        ) : null}
+        <MetricGrid keys={BODY_COMPOSITION_KEYS} record={record} />
       </section>
 
       <section className="space-y-3">

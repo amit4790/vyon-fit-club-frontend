@@ -6,9 +6,12 @@ import { GymTrainerOption } from '../../types'
 import { ApiErrorHandler } from '../../api/errors'
 import {
   buildMetricsPayload,
+  calculateBmi,
   CIRCUMFERENCE_METRIC_FIELDS,
   draftStorageKey,
-  MACHINE_METRIC_FIELDS,
+  MACHINE_CORE_FIELDS,
+  MACHINE_EXTRA_FIELDS,
+  prefillMetricsFromLatest,
 } from '../../utils/bodyMetrics'
 
 function todayIso(): string {
@@ -26,6 +29,7 @@ interface DraftState {
   observations: string
   medicalHistory: string
   nextDate: string
+  bmiSource?: 'calculated' | 'manual'
 }
 
 interface BodyAssessmentFormProps {
@@ -63,6 +67,7 @@ export function BodyAssessmentForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
+  const [bmiSource, setBmiSource] = useState<'calculated' | 'manual'>('manual')
 
   useEffect(() => {
     void gymService
@@ -89,8 +94,23 @@ export function BodyAssessmentForm({
       setObservations(draft.observations || '')
       setMedicalHistory(draft.medicalHistory || (draft as { focusNext?: string }).focusNext || '')
       setNextDate(draft.nextDate || '')
+      setBmiSource(draft.bmiSource === 'calculated' ? 'calculated' : 'manual')
     } catch {
       /* ignore corrupt draft */
+    }
+  }, [memberId])
+
+  useEffect(() => {
+    let cancelled = false
+    void gymService.listBodyAssessments(memberId).then((res) => {
+      if (cancelled) return
+      const history = res.data || []
+      if (history.length === 0) return
+
+      setMetricValues((prev) => prefillMetricsFromLatest(prev, history))
+    })
+    return () => {
+      cancelled = true
     }
   }, [memberId])
 
@@ -109,9 +129,24 @@ export function BodyAssessmentForm({
       observations,
       medicalHistory,
       nextDate,
+      bmiSource,
     }
     localStorage.setItem(draftStorageKey(memberId), JSON.stringify(payload))
     setDraftSavedAt(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))
+  }
+
+  const weightNum = parseFloat(metricValues.weight_kg || '')
+  const heightNum = parseFloat(metricValues.height_cm || '')
+  const calculatedBmi = calculateBmi(
+    Number.isNaN(weightNum) ? null : weightNum,
+    Number.isNaN(heightNum) ? null : heightNum
+  )
+  const canCalculateBmi = calculatedBmi != null
+
+  const handleCalculateBmi = () => {
+    if (calculatedBmi == null) return
+    setMetric('bmi', String(calculatedBmi))
+    setBmiSource('calculated')
   }
 
   const completeAssessment = async () => {
@@ -119,7 +154,9 @@ export function BodyAssessmentForm({
       setError('Select the trainer conducting this assessment.')
       return
     }
-    const metrics = buildMetricsPayload(metricValues)
+    const metrics = buildMetricsPayload(metricValues, {
+      bmiSource: metricValues.bmi?.trim() ? bmiSource : undefined,
+    })
     if (!metrics.some((m) => m.metric_key === 'weight_kg')) {
       setError('Weight (kg) is required.')
       return
@@ -190,8 +227,50 @@ export function BodyAssessmentForm({
       </Section>
 
       <Section title="Body composition (machine)">
+        <p className="text-xs text-text-secondary -mt-1 mb-2">
+          Empty fields are prefilled from the last assessment. Change only what is different today.
+        </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {MACHINE_METRIC_FIELDS.map((field) => (
+          {MACHINE_CORE_FIELDS.map((field) => (
+            <Input
+              key={field.key}
+              label={field.label}
+              type="number"
+              step="0.1"
+              value={metricValues[field.key] || ''}
+              onChange={(e) => setMetric(field.key, e.target.value)}
+            />
+          ))}
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1 min-w-0">
+            <Input
+              label="BMI"
+              type="number"
+              step="0.1"
+              value={metricValues.bmi || ''}
+              onChange={(e) => {
+                setBmiSource('manual')
+                setMetric('bmi', e.target.value)
+              }}
+              placeholder="Use Calculate or enter from machine"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="shrink-0 sm:mb-0.5"
+            disabled={!canCalculateBmi}
+            onClick={handleCalculateBmi}
+          >
+            Calculate BMI
+          </Button>
+        </div>
+        <p className="text-xs text-text-secondary -mt-1">
+          Calculate uses weight and height. You can edit this value to match the machine reading.
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+          {MACHINE_EXTRA_FIELDS.map((field) => (
             <Input
               key={field.key}
               label={field.label}
@@ -205,6 +284,9 @@ export function BodyAssessmentForm({
       </Section>
 
       <Section title="Circumference measurements (manual)">
+        <p className="text-xs text-text-secondary -mt-1 mb-2">
+          Also prefilled from the last assessment when blank.
+        </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {CIRCUMFERENCE_METRIC_FIELDS.map((field) => (
             <Input

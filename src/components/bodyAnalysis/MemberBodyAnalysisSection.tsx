@@ -59,7 +59,7 @@ export function MemberBodyAnalysisSection({ memberId, context }: MemberBodyAnaly
           <div className="flex flex-wrap justify-between gap-2 mb-3">
             <p className="text-sm text-text-secondary">
               {overview?.latest_assessed_on
-                ? `Last recorded ${overview.latest_assessed_on}`
+                ? `Latest assessment · ${overview.latest_assessed_on}`
                 : 'No assessments yet'}
             </p>
             <span className="text-xs rounded-full bg-bg-secondary px-3 py-1 border border-border-light">

@@ -24,13 +24,19 @@ export const METRIC_LABELS: Record<string, string> = {
   calf_right_cm: 'Right calf',
 }
 
-export const MACHINE_METRIC_FIELDS = [
+export const MACHINE_CORE_FIELDS = [
   { key: 'weight_kg', label: 'Weight (kg) *', required: true },
   { key: 'height_cm', label: 'Height (cm)' },
+] as const
+
+export const MACHINE_EXTRA_FIELDS = [
   { key: 'body_fat_pct', label: 'Body fat (%)' },
   { key: 'muscle_mass_kg', label: 'Muscle mass (kg)' },
   { key: 'bmr_kcal', label: 'BMR (kcal)' },
 ] as const
+
+/** All machine inputs (core + extra); used for payload source=machine and detail view. */
+export const MACHINE_METRIC_FIELDS = [...MACHINE_CORE_FIELDS, ...MACHINE_EXTRA_FIELDS] as const
 
 export const CIRCUMFERENCE_METRIC_FIELDS = [
   { key: 'chest_cm', label: 'Chest (cm)' },
@@ -67,6 +73,14 @@ export const PROGRESS_TABLE_METRICS = [
 
 export const LATEST_SUMMARY_METRICS = ['weight_kg', 'body_fat_pct', 'muscle_mass_kg', 'bmi'] as const
 
+export function calculateBmi(weightKg: number | null, heightCm: number | null): number | null {
+  if (weightKg == null || heightCm == null || heightCm <= 0) {
+    return null
+  }
+  const heightM = heightCm / 100
+  return Math.round((weightKg / (heightM * heightM)) * 10) / 10
+}
+
 export function formatMetricValue(key: string, value: number): string {
   if (key === 'bmi') {
     return value.toFixed(1)
@@ -84,20 +98,25 @@ export function formatMetricValue(key: string, value: number): string {
 }
 
 export function buildMetricsPayload(
-  values: Record<string, string>
-): Array<{ metric_key: string; value: number; source: 'machine' | 'manual' }> {
+  values: Record<string, string>,
+  options?: { bmiSource?: 'calculated' | 'manual' }
+): Array<{ metric_key: string; value: number; source: 'machine' | 'manual' | 'calculated' }> {
   const machineKeys = new Set<string>(MACHINE_METRIC_FIELDS.map((f) => f.key))
-  const metrics: Array<{ metric_key: string; value: number; source: 'machine' | 'manual' }> = []
+  const metrics: Array<{ metric_key: string; value: number; source: 'machine' | 'manual' | 'calculated' }> = []
 
   for (const [key, raw] of Object.entries(values)) {
     const trimmed = raw.trim()
     if (!trimmed) continue
     const num = parseFloat(trimmed)
     if (Number.isNaN(num)) continue
+    let source: 'machine' | 'manual' | 'calculated' = machineKeys.has(key) ? 'machine' : 'manual'
+    if (key === 'bmi' && options?.bmiSource) {
+      source = options.bmiSource
+    }
     metrics.push({
       metric_key: key,
       value: num,
-      source: machineKeys.has(key) ? 'machine' : 'manual',
+      source,
     })
   }
 
@@ -148,4 +167,35 @@ export function assessmentsForChart(
 
 export function draftStorageKey(memberId: number): string {
   return `vyon:body-assessment-draft:${memberId}`
+}
+
+export function latestAssessmentRecord(
+  assessments: BodyAssessmentRecord[]
+): BodyAssessmentRecord | null {
+  if (assessments.length === 0) {
+    return null
+  }
+  return assessments
+    .slice()
+    .sort((a, b) => b.assessed_on.localeCompare(a.assessed_on) || b.id - a.id)[0]
+}
+
+/** Prefill empty metric fields from the most recent assessment. */
+export function prefillMetricsFromLatest(
+  current: Record<string, string>,
+  assessments: BodyAssessmentRecord[]
+): Record<string, string> {
+  const latest = latestAssessmentRecord(assessments)
+  if (!latest) {
+    return current
+  }
+  const next = { ...current }
+  let changed = false
+  for (const metric of latest.metrics) {
+    if (!next[metric.metric_key]?.trim()) {
+      next[metric.metric_key] = String(metric.value)
+      changed = true
+    }
+  }
+  return changed ? next : current
 }
