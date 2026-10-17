@@ -51,6 +51,7 @@ class HttpClient {
           const path = window.location.pathname;
           const isProtectedArea =
             path.startsWith('/admin') ||
+            path.startsWith('/gym') ||
             path.startsWith('/trainer') ||
             path.startsWith('/member') ||
             path === '/payment';

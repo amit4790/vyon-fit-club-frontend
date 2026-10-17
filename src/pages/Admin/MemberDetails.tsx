@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthService } from '../../api/api'
 import { ApiErrorHandler } from '../../api/errors'
+import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from '../../components/Table'
+import { ToastContainer, useToast } from '../../components/Toast'
 import AdminShell from '../../layouts/AdminShell'
 import { adminService } from '../../services/adminService'
 import { InvoiceRecord, MemberRecord, SubscriptionRecord } from '../../types'
 import { formatCurrency, formatMembershipPlanName } from '../../utils/format'
+import { MemberBodyAnalysisSection } from '../../components/bodyAnalysis/MemberBodyAnalysisSection'
 
 function formatDate(value: string | null | undefined): string {
   if (!value) {
@@ -34,6 +37,8 @@ export default function AdminMemberDetails() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<number | null>(null)
+  const { toasts, removeToast, error: errorToast } = useToast()
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -80,6 +85,64 @@ export default function AdminMemberDetails() {
 
   const userName = AuthService.getUserInfo()?.name || 'Admin'
 
+  const handleDownloadInvoice = async (invoiceId: number, fileLabel: string) => {
+    try {
+      setDownloadingInvoiceId(invoiceId)
+      const blob = await adminService.downloadInvoicePdf(invoiceId)
+      const url = window.URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${fileLabel}.pdf`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      errorToast('Unable to download invoice', ApiErrorHandler.parse(err).message)
+    } finally {
+      setDownloadingInvoiceId(null)
+    }
+  }
+
+  const membershipRows = useMemo(() => {
+    const invoiceBySubscription = new Map(invoices.map((inv) => [inv.subscription_id, inv]))
+    const linkedSubscriptionIds = new Set<number>()
+
+    const fromSubscriptions = subscriptions.map((sub) => {
+      linkedSubscriptionIds.add(sub.id)
+      const invoice = invoiceBySubscription.get(sub.id)
+      return {
+        key: `sub-${sub.id}`,
+        invoiceId: invoice?.id ?? null,
+        plan: formatMembershipPlanName(sub.plan_label),
+        duration: sub.duration_label,
+        period: `${formatDate(sub.start_date)} – ${formatDate(sub.end_date)}`,
+        membershipStatus: sub.status,
+        paymentStatus: invoice?.status ?? sub.payment_status,
+        invoice: invoice?.invoice_number || (invoice ? `INV-${invoice.id}` : '—'),
+        paidOn: formatDate(invoice?.payment_date || invoice?.paid_at || invoice?.issued_at),
+        amount: invoice ? formatCurrency(Number(invoice.amount || 0)) : formatCurrency(Number(sub.total_amount || 0)),
+      }
+    })
+
+    const invoiceOnly = invoices
+      .filter((inv) => !linkedSubscriptionIds.has(inv.subscription_id))
+      .map((inv) => ({
+        key: `inv-${inv.id}`,
+        invoiceId: inv.id,
+        plan: formatMembershipPlanName(inv.plan_label),
+        duration: '—',
+        period: '—',
+        membershipStatus: '—',
+        paymentStatus: inv.status,
+        invoice: inv.invoice_number || `INV-${inv.id}`,
+        paidOn: formatDate(inv.payment_date || inv.paid_at || inv.issued_at),
+        amount: formatCurrency(Number(inv.amount || 0)),
+      }))
+
+    return [...fromSubscriptions, ...invoiceOnly]
+  }, [subscriptions, invoices])
+
   return (
     <AdminShell
       title="Member Details"
@@ -87,6 +150,7 @@ export default function AdminMemberDetails() {
       userName={userName}
       onLogout={handleLogout}
     >
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       {isLoading ? (
         <Card className="p-8"><p className="text-text-secondary">Loading member details...</p></Card>
       ) : error ? (
@@ -108,83 +172,67 @@ export default function AdminMemberDetails() {
           </Card>
 
           <Card className="p-4 sm:p-5 overflow-hidden">
-            <h2 className="text-lg font-semibold text-text-secondary mb-3">Memberships</h2>
-            {subscriptions.length === 0 ? (
-              <p className="text-sm text-text-secondary">No memberships found.</p>
+            <h2 className="text-lg font-semibold text-text-secondary mb-3">Membership & payments</h2>
+            {membershipRows.length === 0 ? (
+              <p className="text-sm text-text-secondary">No memberships or payments found.</p>
             ) : (
               <div className="overflow-x-auto -mx-1 px-1">
-              <Table frozenColumnCount={1}>
-                <TableHeader>
-                  <TableHeaderCell>Plan</TableHeaderCell>
-                  <TableHeaderCell>Duration</TableHeaderCell>
-                  <TableHeaderCell>Start</TableHeaderCell>
-                  <TableHeaderCell>End</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Payment</TableHeaderCell>
-                </TableHeader>
-                <TableBody>
-                  {subscriptions.map((subscription) => (
-                    <TableRow key={subscription.id}>
-                      <TableCell>{formatMembershipPlanName(subscription.plan_label)}</TableCell>
-                      <TableCell>{subscription.duration_label}</TableCell>
-                      <TableCell>{formatDate(subscription.start_date)}</TableCell>
-                      <TableCell>{formatDate(subscription.end_date)}</TableCell>
-                      <TableCell>{subscription.status}</TableCell>
-                      <TableCell>{subscription.payment_status}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                <Table frozenColumnCount={1}>
+                  <TableHeader>
+                    <TableHeaderCell>Plan</TableHeaderCell>
+                    <TableHeaderCell>Duration</TableHeaderCell>
+                    <TableHeaderCell>Period</TableHeaderCell>
+                    <TableHeaderCell>Membership</TableHeaderCell>
+                    <TableHeaderCell>Payment</TableHeaderCell>
+                    <TableHeaderCell>Invoice</TableHeaderCell>
+                    <TableHeaderCell>Paid</TableHeaderCell>
+                    <TableHeaderCell>Amount</TableHeaderCell>
+                    <TableHeaderCell>PDF</TableHeaderCell>
+                  </TableHeader>
+                  <TableBody>
+                    {membershipRows.map((row) => (
+                      <TableRow key={row.key}>
+                        <TableCell>{row.plan}</TableCell>
+                        <TableCell>{row.duration}</TableCell>
+                        <TableCell>{row.period}</TableCell>
+                        <TableCell>{row.membershipStatus}</TableCell>
+                        <TableCell>{row.paymentStatus}</TableCell>
+                        <TableCell>{row.invoice}</TableCell>
+                        <TableCell>{row.paidOn}</TableCell>
+                        <TableCell>{row.amount}</TableCell>
+                        <TableCell>
+                          {row.invoiceId ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              isLoading={downloadingInvoiceId === row.invoiceId}
+                              onClick={() => void handleDownloadInvoice(row.invoiceId!, row.invoice)}
+                            >
+                              Download
+                            </Button>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            )}
-          </Card>
-
-          <Card className="p-4 sm:p-5 overflow-hidden">
-            <h2 className="text-lg font-semibold text-text-secondary mb-3">Payment History</h2>
-            {invoices.length === 0 ? (
-              <p className="text-sm text-text-secondary">No payments found.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-1 px-1">
-              <Table frozenColumnCount={1}>
-                <TableHeader>
-                  <TableHeaderCell>Invoice</TableHeaderCell>
-                  <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Amount</TableHeaderCell>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>{invoice.invoice_number || `INV-${invoice.id}`}</TableCell>
-                      <TableCell>{formatDate(invoice.issued_at)}</TableCell>
-                      <TableCell>{invoice.status}</TableCell>
-                      <TableCell>{formatCurrency(Number(invoice.amount || 0))}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
-            )}
-          </Card>
-
-          <Card className="p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-text-secondary mb-3">Invoices</h2>
-            {invoices.length === 0 ? (
-              <p className="text-sm text-text-secondary">No invoices available.</p>
-            ) : (
-              <ul className="space-y-2 text-sm text-text-primary">
-                {invoices.map((invoice) => (
-                  <li key={`invoice-${invoice.id}`} className="rounded border border-border-light px-3 py-2">
-                    {invoice.invoice_number || `INV-${invoice.id}`} | {formatCurrency(Number(invoice.amount || 0))} | {invoice.status}
-                  </li>
-                ))}
-              </ul>
             )}
           </Card>
 
           <Card className="p-5">
             <h2 className="text-lg font-semibold text-text-secondary mb-3">Notes</h2>
             <p className="text-sm text-text-primary">{member.notes || 'No notes available.'}</p>
+          </Card>
+
+          <Card className="p-4 sm:p-5 overflow-hidden">
+            <h2 className="text-lg font-semibold text-text-secondary mb-1">Body analysis</h2>
+            <p className="text-sm text-text-secondary mb-3">
+              View and record assessments (backup when the gym tablet is unavailable).
+            </p>
+            <MemberBodyAnalysisSection memberId={member.id} context="admin" />
           </Card>
 
           <Card className="p-5">
@@ -196,3 +244,4 @@ export default function AdminMemberDetails() {
     </AdminShell>
   )
 }
+

@@ -11,6 +11,10 @@ export function canAccessAdmin(role: string | null): boolean {
   return ADMIN_ACCESS_ROLES.includes(role as UserRole)
 }
 
+export function canAccessGymTablet(role: string | null): boolean {
+  return role === USER_ROLES.GYM_TABLET
+}
+
 export function isGymStaff(role: string | null): boolean {
   if (!role) {
     return false

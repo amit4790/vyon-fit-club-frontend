@@ -230,6 +230,63 @@ export interface DailyAttendanceDetailApiResponse {
   data: AttendancePunchDetailRow[]
 }
 
+export interface GymTrainerOption {
+  id: number
+  full_name: string
+}
+
+export interface BodyAssessmentMetricRecord {
+  metric_key: string
+  value: number
+  unit: string
+  source: string
+}
+
+export interface BodyAssessmentRecord {
+  id: number
+  member_id: number
+  conducted_by_trainer_id: number
+  conducted_by_trainer_name?: string | null
+  assessed_on: string
+  assessment_type: string
+  measurement_method?: string | null
+  device_name?: string | null
+  status: string
+  primary_goal?: string | null
+  trainer_observations?: string | null
+  medical_history?: string | null
+  next_assessment_date?: string | null
+  completed_at?: string | null
+  metrics: BodyAssessmentMetricRecord[]
+}
+
+export interface BodyAnalysisOverview {
+  message: string
+  member_id: number
+  assessment_count: number
+  latest_assessed_on: string | null
+  next_assessment_date: string | null
+  latest_metrics: Record<string, number>
+}
+
+export interface ProgressMetricChange {
+  metric_key: string
+  unit: string
+  baseline_value: number | null
+  latest_value: number | null
+  change: number | null
+  change_label: string | null
+}
+
+export interface BodyProgressResponse {
+  message: string
+  member_id: number
+  months: number
+  baseline_assessed_on: string | null
+  latest_assessed_on: string | null
+  changes: ProgressMetricChange[]
+}
+
 export interface AdminUserRecord {
   id: number
   full_name: string

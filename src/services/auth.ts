@@ -6,7 +6,7 @@
 import { httpClient } from '../api/http-client';
 import { API_ENDPOINTS } from '../api/config';
 import { LoginRequest, LoginResponse, UserInfo } from '../api/types';
-import { canAccessAdmin } from '../auth/authorization';
+import { canAccessAdmin, canAccessGymTablet } from '../auth/authorization';
 import { USER_ROLES, UserRole } from '../auth/roles';
 
 export class AuthService {
@@ -95,5 +95,9 @@ export class AuthService {
 
   static canAccessAdmin(): boolean {
     return canAccessAdmin(this.getUserRole());
+  }
+
+  static canAccessGymTablet(): boolean {
+    return canAccessGymTablet(this.getUserRole());
   }
 }

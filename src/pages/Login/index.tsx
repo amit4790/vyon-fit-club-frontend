@@ -38,6 +38,8 @@ export default function Login() {
     const role = AuthService.getUserRole()
     if (role === USER_ROLES.SUPER_ADMIN || role === USER_ROLES.ADMIN) {
       navigate('/admin/dashboard', { replace: true })
+    } else if (role === USER_ROLES.GYM_TABLET) {
+      navigate('/gym/members', { replace: true })
     }
   }, [navigate])
 
@@ -71,6 +73,12 @@ export default function Login() {
       setTimeout(() => {
         if (role === USER_ROLES.SUPER_ADMIN || role === USER_ROLES.ADMIN) {
           navigate('/admin')
+        } else if (role === USER_ROLES.GYM_TABLET) {
+          navigate('/gym/members')
+        } else if (role === USER_ROLES.TRAINER) {
+          navigate('/trainer')
+        } else if (role === USER_ROLES.MEMBER) {
+          navigate('/member')
         }
       }, 1000)
     } catch (error: any) {
