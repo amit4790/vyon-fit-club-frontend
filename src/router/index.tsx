@@ -27,6 +27,8 @@ import AdminBodyProgress from '../pages/Admin/AdminBodyProgress'
 import AdminTrainerDetails from '../pages/Admin/TrainerDetails'
 import Trainer from '../pages/Trainer'
 import Member from '../pages/Member'
+import MemberBodyAssessments from '../pages/Member/BodyAssessments'
+import MemberBodyAssessmentDetail from '../pages/Member/BodyAssessmentDetail'
 import GymMembers from '../pages/Gym/Members'
 import GymMemberBodyAnalysis from '../pages/Gym/MemberBodyAnalysis'
 import GymNewAssessment from '../pages/Gym/NewAssessment'
@@ -106,11 +108,13 @@ const router = createBrowserRouter([
       },
       {
         path: '/member',
-        element: <Member />,
-      },
-      {
-        path: '/member/dashboard',
-        element: <Member />,
+        element: <RequireMemberAccess />,
+        children: [
+          { index: true, element: <Member /> },
+          { path: 'dashboard', element: <Member /> },
+          { path: 'body-assessments', element: <MemberBodyAssessments /> },
+          { path: 'body-assessments/:assessmentId', element: <MemberBodyAssessmentDetail /> },
+        ],
       },
     ],
   },
@@ -135,6 +139,14 @@ function RequireAdminAccess() {
 
 function RequireGymTabletAccess() {
   if (!AuthService.isAuthenticated() || !AuthService.canAccessGymTablet()) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Outlet />
+}
+
+function RequireMemberAccess() {
+  if (!AuthService.isAuthenticated() || AuthService.getUserRole() !== USER_ROLES.MEMBER) {
     return <Navigate to="/login" replace />
   }
 

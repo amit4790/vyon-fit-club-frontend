@@ -11,6 +11,8 @@ export default function AdminBodyAssessmentNew() {
   const id = Number(memberId)
   const paths = bodyAnalysisPaths(id, 'admin')
   const [memberName, setMemberName] = useState('')
+  const [memberDateOfBirth, setMemberDateOfBirth] = useState<string | null>(null)
+  const [memberPhone, setMemberPhone] = useState<string | null>(null)
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessAdmin()) {
@@ -23,7 +25,11 @@ export default function AdminBodyAssessmentNew() {
     }
     void adminService
       .getMemberById(id)
-      .then((res) => setMemberName(res.data.full_name))
+      .then((res) => {
+        setMemberName(res.data.full_name)
+        setMemberDateOfBirth(res.data.date_of_birth || null)
+        setMemberPhone(res.data.mobile_number || null)
+      })
       .catch(() => navigate(paths.memberDetails))
   }, [id, navigate, paths.memberDetails])
 
@@ -42,6 +48,8 @@ export default function AdminBodyAssessmentNew() {
       <BodyAssessmentForm
         memberId={id}
         memberName={memberName || `Member #${id}`}
+        memberDateOfBirth={memberDateOfBirth}
+        memberPhone={memberPhone}
         onCancel={() => navigate(paths.memberDetails)}
         onComplete={() => navigate(paths.memberDetails)}
       />

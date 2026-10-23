@@ -4,28 +4,20 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { DashboardService, MemberDashboardResponse, AuthService } from '../../api/api'
 import { ApiErrorHandler } from '../../api/errors'
 import { Card } from '../../components/Card'
-import vyonLogo from '../../assets/images/logo/vyon-logo.jpg'
+import { MemberPageHeader } from '../../components/member/MemberPageHeader'
 
 export default function Member() {
-  const navigate = useNavigate()
   const [dashboard, setDashboard] = useState<MemberDashboardResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check authentication
-    if (!AuthService.isAuthenticated() || !AuthService.hasRole('member')) {
-      navigate('/login')
-      return
-    }
-
     loadDashboard()
-  }, [navigate])
+  }, [])
 
   const loadDashboard = async () => {
     try {
@@ -39,11 +31,6 @@ export default function Member() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleLogout = () => {
-    AuthService.logout()
-    navigate('/login')
   }
 
   const userInfo = AuthService.getUserInfo()
@@ -84,50 +71,7 @@ export default function Member() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Premium Header with Logo and Branding */}
-      <header className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between min-h-[4.5rem] sm:h-24 py-2">
-            {/* Left Side - Logo and Branding */}
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-4 group cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              <img
-                src={vyonLogo}
-                alt="VYON FIT CLUB"
-                className="h-16 w-16 object-contain rounded transition-transform duration-300 group-hover:scale-110"
-              />
-              <div className="hidden sm:flex flex-col">
-                <span className="text-text-secondary font-bold text-2xl leading-tight tracking-tighter">
-                  VYON
-                </span>
-                <span className="text-gray-400 text-sm font-light">Premium Fitness Club</span>
-              </div>
-            </button>
-
-            {/* Right Side - User Info and Logout */}
-            <div className="flex items-center gap-6">
-              {/* Welcome Message */}
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-text-secondary text-sm font-medium">
-                  Welcome, {userName}
-                </span>
-                <span className="text-gray-400 text-xs">Member</span>
-              </div>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-text-secondary rounded-lg transition-all duration-300 font-medium text-sm"
-              >
-                <LogOut size={18} />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <MemberPageHeader />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -186,6 +130,23 @@ export default function Member() {
             </div>
           </Card>
         </div>
+
+        <Card className="mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">My body assessments</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                View measurements and goals from your in-club assessments (read-only).
+              </p>
+            </div>
+            <Link
+              to="/member/body-assessments"
+              className="inline-flex justify-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              Open assessments
+            </Link>
+          </div>
+        </Card>
 
         {/* Recent Visits */}
         <Card>

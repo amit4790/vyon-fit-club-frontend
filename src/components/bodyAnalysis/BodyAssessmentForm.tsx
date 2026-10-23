@@ -13,6 +13,15 @@ import {
   MACHINE_EXTRA_FIELDS,
   prefillMetricsFromLatest,
 } from '../../utils/bodyMetrics'
+import { MedicalFitnessQuestionnaire } from './MedicalFitnessQuestionnaire'
+import {
+  buildMedicalQuestionnairePayload,
+  emptyMedicalQuestionnaireForm,
+  fitnessGoalsToPrimaryGoal,
+  MedicalQuestionnaireFormState,
+  questionnaireFromRecord,
+  validateMedicalQuestionnaireForm,
+} from '../../utils/medicalQuestionnaire'
 
 function todayIso(): string {
   const d = new Date()
@@ -25,9 +34,8 @@ interface DraftState {
   assessmentType: string
   deviceName: string
   metricValues: Record<string, string>
-  primaryGoal: string
   observations: string
-  medicalHistory: string
+  questionnaire: MedicalQuestionnaireFormState
   nextDate: string
   bmiSource?: 'calculated' | 'manual'
 }
@@ -35,6 +43,8 @@ interface DraftState {
 interface BodyAssessmentFormProps {
   memberId: number
   memberName: string
+  memberDateOfBirth?: string | null
+  memberPhone?: string | null
   onCancel: () => void
   onComplete: () => void
 }
@@ -51,6 +61,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function BodyAssessmentForm({
   memberId,
   memberName,
+  memberDateOfBirth,
+  memberPhone,
   onCancel,
   onComplete,
 }: BodyAssessmentFormProps) {
@@ -60,9 +72,10 @@ export function BodyAssessmentForm({
   const [assessmentType, setAssessmentType] = useState('monthly_review')
   const [deviceName, setDeviceName] = useState('')
   const [metricValues, setMetricValues] = useState<Record<string, string>>({})
-  const [primaryGoal, setPrimaryGoal] = useState('')
   const [observations, setObservations] = useState('')
-  const [medicalHistory, setMedicalHistory] = useState('')
+  const [questionnaire, setQuestionnaire] = useState<MedicalQuestionnaireFormState>(
+    emptyMedicalQuestionnaireForm()
+  )
   const [nextDate, setNextDate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -90,9 +103,15 @@ export function BodyAssessmentForm({
       setAssessmentType(draft.assessmentType || 'monthly_review')
       setDeviceName(draft.deviceName || '')
       setMetricValues(draft.metricValues || {})
-      setPrimaryGoal(draft.primaryGoal || '')
       setObservations(draft.observations || '')
-      setMedicalHistory(draft.medicalHistory || (draft as { focusNext?: string }).focusNext || '')
+      if (draft.questionnaire) {
+        setQuestionnaire(draft.questionnaire)
+      } else {
+        const legacyMedical = (draft as { medicalHistory?: string }).medicalHistory
+        if (legacyMedical) {
+          setQuestionnaire((q) => ({ ...q, otherImportantInfo: legacyMedical }))
+        }
+      }
       setNextDate(draft.nextDate || '')
       setBmiSource(draft.bmiSource === 'calculated' ? 'calculated' : 'manual')
     } catch {
@@ -108,6 +127,12 @@ export function BodyAssessmentForm({
       if (history.length === 0) return
 
       setMetricValues((prev) => prefillMetricsFromLatest(prev, history))
+      const latest = history[0]
+      if (latest?.medical_questionnaire) {
+        const fromLatest = questionnaireFromRecord(latest.medical_questionnaire)
+        fromLatest.declarationAccepted = false
+        setQuestionnaire(fromLatest)
+      }
     })
     return () => {
       cancelled = true
@@ -125,9 +150,8 @@ export function BodyAssessmentForm({
       assessmentType,
       deviceName,
       metricValues,
-      primaryGoal,
       observations,
-      medicalHistory,
+      questionnaire,
       nextDate,
       bmiSource,
     }
@@ -162,6 +186,23 @@ export function BodyAssessmentForm({
       return
     }
 
+    const questionnaireError = validateMedicalQuestionnaireForm(
+      questionnaire,
+      memberDateOfBirth,
+      assessedOn
+    )
+    if (questionnaireError) {
+      setError(questionnaireError)
+      return
+    }
+
+    const medicalQuestionnaire = buildMedicalQuestionnairePayload(
+      questionnaire,
+      memberDateOfBirth,
+      assessedOn
+    )
+    const primaryGoal = fitnessGoalsToPrimaryGoal(questionnaire.fitnessGoals)
+
     try {
       setIsSubmitting(true)
       setError(null)
@@ -172,9 +213,10 @@ export function BodyAssessmentForm({
         assessment_type: assessmentType as 'initial' | 'monthly_review' | 'follow_up' | 'other',
         device_name: deviceName || null,
         measurement_method: deviceName ? 'Body composition machine' : null,
-        primary_goal: primaryGoal || null,
+        primary_goal: primaryGoal,
         trainer_observations: observations || null,
-        medical_history: medicalHistory || null,
+        medical_history: questionnaire.otherImportantInfo || null,
+        medical_questionnaire: medicalQuestionnaire,
         next_assessment_date: nextDate || null,
         metrics,
       })
@@ -189,9 +231,6 @@ export function BodyAssessmentForm({
 
   return (
     <div className="space-y-6 pb-28">
-      <p className="text-sm text-text-secondary">
-        Member: <span className="text-text-primary font-medium">{memberName}</span> (ID {memberId})
-      </p>
       {error ? <p className="text-red-500 text-sm">{error}</p> : null}
 
       <Section title="Assessment details">
@@ -224,6 +263,21 @@ export function BodyAssessmentForm({
             placeholder="e.g. in-club composition scale"
           />
         </div>
+      </Section>
+
+      <Section title="Medical & fitness questionnaire">
+        <p className="text-xs text-text-secondary -mt-1">
+          Matches the in-club intake form. Answers are saved with this assessment and prefilled from the
+          last visit when starting a new one.
+        </p>
+        <MedicalFitnessQuestionnaire
+          value={questionnaire}
+          onChange={setQuestionnaire}
+          memberName={memberName}
+          memberDateOfBirth={memberDateOfBirth}
+          memberPhone={memberPhone}
+          assessedOn={assessedOn}
+        />
       </Section>
 
       <Section title="Body composition (machine)">
@@ -301,23 +355,19 @@ export function BodyAssessmentForm({
         </div>
       </Section>
 
-      <Section title="Trainer notes & goals">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Input label="Primary goal" value={primaryGoal} onChange={(e) => setPrimaryGoal(e.target.value)} />
-          <Input label="Next assessment date" type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
-        </div>
+      <Section title="Trainer notes">
+        <Input
+          label="Next assessment date"
+          type="date"
+          value={nextDate}
+          onChange={(e) => setNextDate(e.target.value)}
+        />
         <label className="block text-sm text-text-secondary">Observations</label>
         <textarea
           className="input-base w-full min-h-[6rem]"
           value={observations}
           onChange={(e) => setObservations(e.target.value)}
-        />
-        <label className="block text-sm text-text-secondary">Medical history</label>
-        <textarea
-          className="input-base w-full min-h-[6rem]"
-          value={medicalHistory}
-          onChange={(e) => setMedicalHistory(e.target.value)}
-          placeholder="Injuries, conditions, medications, or restrictions relevant to training"
+          placeholder="Training notes for this session (optional)"
         />
       </Section>
 

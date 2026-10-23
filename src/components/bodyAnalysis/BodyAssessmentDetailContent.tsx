@@ -1,4 +1,5 @@
 import { BodyAssessmentRecord } from '../../types'
+import { MedicalQuestionnaireDetail } from './MedicalQuestionnaireDetail'
 import {
   CIRCUMFERENCE_METRIC_FIELDS,
   formatMetricValue,
@@ -44,17 +45,23 @@ export function BodyAssessmentDetailContent({ record }: { record: BodyAssessment
         <MetricGrid keys={CIRCUMFERENCE_METRIC_FIELDS} record={record} />
       </section>
 
-      {(record.primary_goal || record.trainer_observations || record.medical_history) && (
+      {record.medical_questionnaire ? (
+        <MedicalQuestionnaireDetail questionnaire={record.medical_questionnaire} />
+      ) : record.medical_history ? (
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-text-secondary">Notes & goals</h2>
-          {record.primary_goal ? <p><span className="text-text-secondary">Goal:</span> {record.primary_goal}</p> : null}
+          <h2 className="text-base font-semibold text-text-secondary">Medical history (legacy)</h2>
+          <p className="text-sm whitespace-pre-wrap">{record.medical_history}</p>
+        </section>
+      ) : null}
+
+      {(record.primary_goal || record.trainer_observations || record.next_assessment_date) && (
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold text-text-secondary">Trainer notes</h2>
+          {record.primary_goal ? (
+            <p><span className="text-text-secondary">Goals:</span> {record.primary_goal}</p>
+          ) : null}
           {record.trainer_observations ? (
             <p className="text-sm whitespace-pre-wrap">{record.trainer_observations}</p>
-          ) : null}
-          {record.medical_history ? (
-            <p className="text-sm whitespace-pre-wrap">
-              <span className="font-medium">Medical history:</span> {record.medical_history}
-            </p>
           ) : null}
           {record.next_assessment_date ? (
             <p className="text-sm text-text-secondary">Next assessment: {record.next_assessment_date}</p>

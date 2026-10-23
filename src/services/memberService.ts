@@ -1,15 +1,14 @@
-/**
- * Member API service
- */
-
-import { httpClient } from '../api/api'
+import { httpClient } from '../api/http-client'
+import { MemberBodyAssessmentDetail, MemberBodyAssessmentSummary } from '../types'
 
 export const memberService = {
-  getDashboard: () => httpClient.get('/api/member/dashboard'),
+  listBodyAssessments: () =>
+    httpClient.get<{ message: string; data: MemberBodyAssessmentSummary[] }>(
+      '/member/body-assessments'
+    ),
 
-  getProfile: () => httpClient.get('/api/member/profile'),
-
-  getClasses: () => httpClient.get('/api/member/classes'),
-
-  getBookings: () => httpClient.get('/api/member/bookings'),
+  getBodyAssessment: (assessmentId: number) =>
+    httpClient.get<{ message: string; data: MemberBodyAssessmentDetail }>(
+      `/member/body-assessments/${assessmentId}`
+    ),
 }

@@ -13,6 +13,8 @@ export default function GymNewAssessment() {
   const id = Number(memberId)
   const paths = bodyAnalysisPaths(id, 'gym')
   const [memberName, setMemberName] = useState('')
+  const [memberDateOfBirth, setMemberDateOfBirth] = useState<string | null>(null)
+  const [memberPhone, setMemberPhone] = useState<string | null>(null)
 
   useEffect(() => {
     if (!AuthService.isAuthenticated() || !AuthService.canAccessGymTablet()) {
@@ -25,7 +27,11 @@ export default function GymNewAssessment() {
     }
     void gymService
       .getMember(id)
-      .then((res) => setMemberName(res.data.full_name))
+      .then((res) => {
+        setMemberName(res.data.full_name)
+        setMemberDateOfBirth(res.data.date_of_birth || null)
+        setMemberPhone(res.data.mobile_number || null)
+      })
       .catch((err) => {
         ApiErrorHandler.parse(err)
         navigate(paths.memberDetails)
@@ -41,6 +47,8 @@ export default function GymNewAssessment() {
       <BodyAssessmentForm
         memberId={id}
         memberName={memberName || `Member #${id}`}
+        memberDateOfBirth={memberDateOfBirth}
+        memberPhone={memberPhone}
         onCancel={() => navigate(paths.memberDetails)}
         onComplete={() => navigate(paths.memberDetails)}
       />

@@ -4,6 +4,7 @@ import {
   BodyAssessmentRecord,
   BodyProgressResponse,
   GymTrainerOption,
+  MedicalQuestionnaireRecord,
   MemberListApiResponse,
   MemberOperationApiResponse,
 } from '../types'
@@ -17,6 +18,7 @@ export interface CreateBodyAssessmentPayload {
   primary_goal?: string | null
   trainer_observations?: string | null
   medical_history?: string | null
+  medical_questionnaire?: MedicalQuestionnaireRecord | null
   next_assessment_date?: string | null
   metrics: Array<{ metric_key: string; value: number; source?: 'machine' | 'manual' | 'calculated' }>
 }

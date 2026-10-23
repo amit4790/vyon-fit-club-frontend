@@ -5,6 +5,7 @@ export const METRIC_LABELS: Record<string, string> = {
   height_cm: 'Height',
   bmi: 'BMI',
   body_fat_pct: 'Body fat',
+  visceral_fat_level: 'Visceral fat',
   muscle_mass_kg: 'Muscle mass',
   bmr_kcal: 'BMR',
   waist_cm: 'Waist',
@@ -31,6 +32,7 @@ export const MACHINE_CORE_FIELDS = [
 
 export const MACHINE_EXTRA_FIELDS = [
   { key: 'body_fat_pct', label: 'Body fat (%)' },
+  { key: 'visceral_fat_level', label: 'Visceral fat (level)' },
   { key: 'muscle_mass_kg', label: 'Muscle mass (kg)' },
   { key: 'bmr_kcal', label: 'BMR (kcal)' },
 ] as const
@@ -65,6 +67,7 @@ export const PROGRESS_TABLE_METRICS = [
   'weight_kg',
   'height_cm',
   'body_fat_pct',
+  'visceral_fat_level',
   'muscle_mass_kg',
   'bmr_kcal',
   'bmi',
@@ -87,6 +90,9 @@ export function formatMetricValue(key: string, value: number): string {
   }
   if (key === 'body_fat_pct') {
     return `${value.toFixed(1)}%`
+  }
+  if (key === 'visceral_fat_level') {
+    return value % 1 === 0 ? String(Math.round(value)) : value.toFixed(1)
   }
   if (key.endsWith('_cm')) {
     return `${value.toFixed(1)} cm`

@@ -242,6 +242,37 @@ export interface BodyAssessmentMetricRecord {
   source: string
 }
 
+export interface MedicalQuestionnaireRecord {
+  age_years?: number | null
+  medical_conditions?: string[]
+  medical_conditions_other?: string | null
+  injury_pain?: string[]
+  injury_pain_other?: string | null
+  medication_surgery?: 'no' | 'yes' | null
+  medication_surgery_details?: string | null
+  exercise_chest_pain?: 'no' | 'yes' | null
+  exercise_doctor_restrict?: 'no' | 'yes' | null
+  fitness_goals?: string[]
+  prior_gym?: 'no' | 'yes' | null
+  workout_frequency?: '2_3' | '4_5' | '6' | null
+  other_important_info?: string | null
+  declaration_accepted?: boolean
+  client_signature?: string | null
+}
+
+export interface MemberBodyAssessmentSummary {
+  id: number
+  assessed_on: string
+  fitness_goals?: string | null
+}
+
+export interface MemberBodyAssessmentDetail {
+  id: number
+  assessed_on: string
+  fitness_goals?: string | null
+  metrics: BodyAssessmentMetricRecord[]
+}
+
 export interface BodyAssessmentRecord {
   id: number
   member_id: number
@@ -255,6 +286,7 @@ export interface BodyAssessmentRecord {
   primary_goal?: string | null
   trainer_observations?: string | null
   medical_history?: string | null
+  medical_questionnaire?: MedicalQuestionnaireRecord | null
   next_assessment_date?: string | null
   completed_at?: string | null
   metrics: BodyAssessmentMetricRecord[]
