@@ -8,6 +8,7 @@ export const METRIC_LABELS: Record<string, string> = {
   visceral_fat_level: 'Visceral fat',
   muscle_mass_kg: 'Muscle mass',
   bmr_kcal: 'BMR',
+  metabolic_age_years: 'Metabolic age',
   waist_cm: 'Waist',
   chest_cm: 'Chest',
   upper_chest_cm: 'Upper chest',
@@ -35,6 +36,7 @@ export const MACHINE_EXTRA_FIELDS = [
   { key: 'visceral_fat_level', label: 'Visceral fat (level)' },
   { key: 'muscle_mass_kg', label: 'Muscle mass (kg)' },
   { key: 'bmr_kcal', label: 'BMR (kcal)' },
+  { key: 'metabolic_age_years', label: 'Metabolic age (years)' },
 ] as const
 
 /** All machine inputs (core + extra); used for payload source=machine and detail view. */
@@ -58,6 +60,16 @@ export const CIRCUMFERENCE_METRIC_FIELDS = [
   { key: 'calf_right_cm', label: 'Right calf (cm)' },
 ] as const
 
+/** Metrics that support an optional trainer-set target (height is current-only). */
+export const TARGETABLE_METRIC_KEYS = [
+  'weight_kg',
+  'bmi',
+  ...MACHINE_EXTRA_FIELDS.map((f) => f.key),
+  ...CIRCUMFERENCE_METRIC_FIELDS.map((f) => f.key),
+] as const
+
+export type TargetableMetricKey = (typeof TARGETABLE_METRIC_KEYS)[number]
+
 export const PROGRESS_CHART_METRICS = ['weight_kg', 'body_fat_pct', 'muscle_mass_kg', 'waist_cm'] as const
 
 export const PROGRESS_MONTH_COUNT = 3
@@ -70,6 +82,7 @@ export const PROGRESS_TABLE_METRICS = [
   'visceral_fat_level',
   'muscle_mass_kg',
   'bmr_kcal',
+  'metabolic_age_years',
   'bmi',
   ...CIRCUMFERENCE_METRIC_FIELDS.map((f) => f.key),
 ] as const
@@ -100,6 +113,9 @@ export function formatMetricValue(key: string, value: number): string {
   if (key === 'bmr_kcal') {
     return `${Math.round(value)} kcal`
   }
+  if (key === 'metabolic_age_years') {
+    return `${Math.round(value)} yrs`
+  }
   return `${value.toFixed(1)} kg`
 }
 
@@ -111,6 +127,8 @@ export function buildMetricsPayload(
   const metrics: Array<{ metric_key: string; value: number; source: 'machine' | 'manual' | 'calculated' }> = []
 
   for (const [key, raw] of Object.entries(values)) {
+    if (key.startsWith('target:')) continue
+    if (!(key in METRIC_LABELS)) continue
     const trimmed = raw.trim()
     if (!trimmed) continue
     const num = parseFloat(trimmed)
@@ -127,6 +145,36 @@ export function buildMetricsPayload(
   }
 
   return metrics
+}
+
+export function buildTargetsPayload(values: Record<string, string>): Record<string, number> | null {
+  const targets: Record<string, number> = {}
+  for (const key of TARGETABLE_METRIC_KEYS) {
+    const raw = values[`target:${key}`]?.trim()
+    if (!raw) continue
+    const num = parseFloat(raw)
+    if (Number.isNaN(num)) continue
+    targets[key] = num
+  }
+  return Object.keys(targets).length > 0 ? targets : null
+}
+
+export function prefillTargetsFromLatest(
+  current: Record<string, string>,
+  assessments: BodyAssessmentRecord[]
+): Record<string, string> {
+  const latest = latestAssessmentRecord(assessments)
+  if (!latest?.metric_targets) return current
+  const next = { ...current }
+  let changed = false
+  for (const [key, value] of Object.entries(latest.metric_targets)) {
+    const field = `target:${key}`
+    if (!next[field]?.trim()) {
+      next[field] = String(value)
+      changed = true
+    }
+  }
+  return changed ? next : current
 }
 
 export interface MonthBucket {

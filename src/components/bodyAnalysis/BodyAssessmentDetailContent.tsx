@@ -9,18 +9,34 @@ import {
 
 function MetricGrid({ keys, record }: { keys: readonly { key: string }[]; record: BodyAssessmentRecord }) {
   const map = new Map(record.metrics.map((m) => [m.metric_key, m.value]))
-  const visible = keys.filter((k) => map.has(k.key))
+  const targets = record.metric_targets || {}
+  const visible = keys.filter((k) => map.has(k.key) || targets[k.key] != null)
   if (visible.length === 0) {
     return <p className="text-sm text-text-secondary">No readings recorded in this section.</p>
   }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {visible.map((field) => (
-        <div key={field.key} className="rounded-lg border border-border-light p-3">
-          <p className="text-xs text-text-secondary">{METRIC_LABELS[field.key] || field.key}</p>
-          <p className="font-semibold">{formatMetricValue(field.key, map.get(field.key)!)}</p>
-        </div>
-      ))}
+      {visible.map((field) => {
+        const current = map.get(field.key)
+        const target = targets[field.key]
+        return (
+          <div key={field.key} className="rounded-lg border border-border-light p-3">
+            <p className="text-xs text-text-secondary">{METRIC_LABELS[field.key] || field.key}</p>
+            {current != null ? (
+              <p className="font-semibold">
+                <span className="text-text-secondary text-xs font-normal">Current </span>
+                {formatMetricValue(field.key, current)}
+              </p>
+            ) : null}
+            {target != null ? (
+              <p className="font-semibold text-primary mt-1">
+                <span className="text-text-secondary text-xs font-normal">Target </span>
+                {formatMetricValue(field.key, target)}
+              </p>
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -32,7 +48,6 @@ export function BodyAssessmentDetailContent({ record }: { record: BodyAssessment
     <div className="space-y-6">
       <p className="text-sm text-text-secondary">
         {record.assessed_on} · {record.conducted_by_trainer_name || `Trainer #${record.conducted_by_trainer_id}`}
-        {record.device_name ? ` · ${record.device_name}` : ''}
       </p>
 
       <section className="space-y-3">

@@ -19,6 +19,7 @@ export interface CreateBodyAssessmentPayload {
   trainer_observations?: string | null
   medical_history?: string | null
   medical_questionnaire?: MedicalQuestionnaireRecord | null
+  metric_targets?: Record<string, number> | null
   next_assessment_date?: string | null
   metrics: Array<{ metric_key: string; value: number; source?: 'machine' | 'manual' | 'calculated' }>
 }

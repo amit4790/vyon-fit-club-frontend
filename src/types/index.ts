@@ -271,6 +271,7 @@ export interface MemberBodyAssessmentDetail {
   assessed_on: string
   fitness_goals?: string | null
   metrics: BodyAssessmentMetricRecord[]
+  metric_targets?: Record<string, number> | null
 }
 
 export interface BodyAssessmentRecord {
@@ -287,6 +288,7 @@ export interface BodyAssessmentRecord {
   trainer_observations?: string | null
   medical_history?: string | null
   medical_questionnaire?: MedicalQuestionnaireRecord | null
+  metric_targets?: Record<string, number> | null
   next_assessment_date?: string | null
   completed_at?: string | null
   metrics: BodyAssessmentMetricRecord[]

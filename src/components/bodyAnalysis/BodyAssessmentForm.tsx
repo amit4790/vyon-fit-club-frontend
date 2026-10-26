@@ -6,14 +6,15 @@ import { GymTrainerOption } from '../../types'
 import { ApiErrorHandler } from '../../api/errors'
 import {
   buildMetricsPayload,
-  calculateBmi,
+  buildTargetsPayload,
   CIRCUMFERENCE_METRIC_FIELDS,
   draftStorageKey,
-  MACHINE_CORE_FIELDS,
   MACHINE_EXTRA_FIELDS,
   prefillMetricsFromLatest,
+  prefillTargetsFromLatest,
 } from '../../utils/bodyMetrics'
 import { MedicalFitnessQuestionnaire } from './MedicalFitnessQuestionnaire'
+import { MetricMeasurementTable } from './MetricCurrentTargetFields'
 import {
   buildMedicalQuestionnairePayload,
   emptyMedicalQuestionnaireForm,
@@ -32,7 +33,6 @@ interface DraftState {
   conductedBy: string
   assessedOn: string
   assessmentType: string
-  deviceName: string
   metricValues: Record<string, string>
   observations: string
   questionnaire: MedicalQuestionnaireFormState
@@ -70,7 +70,6 @@ export function BodyAssessmentForm({
   const [conductedBy, setConductedBy] = useState('')
   const [assessedOn, setAssessedOn] = useState(todayIso())
   const [assessmentType, setAssessmentType] = useState('monthly_review')
-  const [deviceName, setDeviceName] = useState('')
   const [metricValues, setMetricValues] = useState<Record<string, string>>({})
   const [observations, setObservations] = useState('')
   const [questionnaire, setQuestionnaire] = useState<MedicalQuestionnaireFormState>(
@@ -101,7 +100,6 @@ export function BodyAssessmentForm({
       setConductedBy(draft.conductedBy || '')
       setAssessedOn(draft.assessedOn || todayIso())
       setAssessmentType(draft.assessmentType || 'monthly_review')
-      setDeviceName(draft.deviceName || '')
       setMetricValues(draft.metricValues || {})
       setObservations(draft.observations || '')
       if (draft.questionnaire) {
@@ -126,7 +124,7 @@ export function BodyAssessmentForm({
       const history = res.data || []
       if (history.length === 0) return
 
-      setMetricValues((prev) => prefillMetricsFromLatest(prev, history))
+      setMetricValues((prev) => prefillTargetsFromLatest(prefillMetricsFromLatest(prev, history), history))
       const latest = history[0]
       if (latest?.medical_questionnaire) {
         const fromLatest = questionnaireFromRecord(latest.medical_questionnaire)
@@ -140,6 +138,9 @@ export function BodyAssessmentForm({
   }, [memberId])
 
   const setMetric = (key: string, value: string) => {
+    if (key === 'bmi') {
+      setBmiSource('manual')
+    }
     setMetricValues((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -148,7 +149,6 @@ export function BodyAssessmentForm({
       conductedBy,
       assessedOn,
       assessmentType,
-      deviceName,
       metricValues,
       observations,
       questionnaire,
@@ -157,20 +157,6 @@ export function BodyAssessmentForm({
     }
     localStorage.setItem(draftStorageKey(memberId), JSON.stringify(payload))
     setDraftSavedAt(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))
-  }
-
-  const weightNum = parseFloat(metricValues.weight_kg || '')
-  const heightNum = parseFloat(metricValues.height_cm || '')
-  const calculatedBmi = calculateBmi(
-    Number.isNaN(weightNum) ? null : weightNum,
-    Number.isNaN(heightNum) ? null : heightNum
-  )
-  const canCalculateBmi = calculatedBmi != null
-
-  const handleCalculateBmi = () => {
-    if (calculatedBmi == null) return
-    setMetric('bmi', String(calculatedBmi))
-    setBmiSource('calculated')
   }
 
   const completeAssessment = async () => {
@@ -202,6 +188,7 @@ export function BodyAssessmentForm({
       assessedOn
     )
     const primaryGoal = fitnessGoalsToPrimaryGoal(questionnaire.fitnessGoals)
+    const metricTargets = buildTargetsPayload(metricValues)
 
     try {
       setIsSubmitting(true)
@@ -211,12 +198,13 @@ export function BodyAssessmentForm({
         conducted_by_trainer_id: Number(conductedBy),
         assessed_on: assessedOn,
         assessment_type: assessmentType as 'initial' | 'monthly_review' | 'follow_up' | 'other',
-        device_name: deviceName || null,
-        measurement_method: deviceName ? 'Body composition machine' : null,
+        device_name: null,
+        measurement_method: null,
         primary_goal: primaryGoal,
         trainer_observations: observations || null,
         medical_history: questionnaire.otherImportantInfo || null,
         medical_questionnaire: medicalQuestionnaire,
+        metric_targets: metricTargets,
         next_assessment_date: nextDate || null,
         metrics,
       })
@@ -228,6 +216,13 @@ export function BodyAssessmentForm({
       setIsSubmitting(false)
     }
   }
+
+  const bodyCompositionRows = [
+    { key: 'weight_kg', label: 'Weight (kg) *' },
+    { key: 'height_cm', label: 'Height (cm)', targetDisabled: true },
+    { key: 'bmi', label: 'BMI' },
+    ...MACHINE_EXTRA_FIELDS.map((f) => ({ key: f.key, label: f.label })),
+  ]
 
   return (
     <div className="space-y-6 pb-28">
@@ -256,12 +251,6 @@ export function BodyAssessmentForm({
             ]}
             onChange={(e) => setAssessmentType(e.target.value)}
           />
-          <Input
-            label="Machine / device"
-            value={deviceName}
-            onChange={(e) => setDeviceName(e.target.value)}
-            placeholder="e.g. in-club composition scale"
-          />
         </div>
       </Section>
 
@@ -280,79 +269,23 @@ export function BodyAssessmentForm({
         />
       </Section>
 
-      <Section title="Body composition (machine)">
-        <p className="text-xs text-text-secondary -mt-1 mb-2">
-          Empty fields are prefilled from the last assessment. Change only what is different today.
+      <Section title="Body composition">
+        <p className="text-xs text-text-secondary -mt-1 mb-4">
+          Current readings from the scale plus optional program targets. Empty fields are prefilled from the
+          last assessment when you start a new one.
         </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {MACHINE_CORE_FIELDS.map((field) => (
-            <Input
-              key={field.key}
-              label={field.label}
-              type="number"
-              step="0.1"
-              value={metricValues[field.key] || ''}
-              onChange={(e) => setMetric(field.key, e.target.value)}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div className="flex-1 min-w-0">
-            <Input
-              label="BMI"
-              type="number"
-              step="0.1"
-              value={metricValues.bmi || ''}
-              onChange={(e) => {
-                setBmiSource('manual')
-                setMetric('bmi', e.target.value)
-              }}
-              placeholder="Use Calculate or enter from machine"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            className="shrink-0 sm:mb-0.5"
-            disabled={!canCalculateBmi}
-            onClick={handleCalculateBmi}
-          >
-            Calculate BMI
-          </Button>
-        </div>
-        <p className="text-xs text-text-secondary -mt-1">
-          Calculate uses weight and height. You can edit this value to match the machine reading.
-        </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
-          {MACHINE_EXTRA_FIELDS.map((field) => (
-            <Input
-              key={field.key}
-              label={field.label}
-              type="number"
-              step="0.1"
-              value={metricValues[field.key] || ''}
-              onChange={(e) => setMetric(field.key, e.target.value)}
-            />
-          ))}
-        </div>
+        <MetricMeasurementTable rows={bodyCompositionRows} values={metricValues} onChange={setMetric} />
       </Section>
 
       <Section title="Circumference measurements (manual)">
-        <p className="text-xs text-text-secondary -mt-1 mb-2">
-          Also prefilled from the last assessment when blank.
+        <p className="text-xs text-text-secondary -mt-1 mb-4">
+          Tape measurements — current and optional target. Prefilled from the last assessment when blank.
         </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {CIRCUMFERENCE_METRIC_FIELDS.map((field) => (
-            <Input
-              key={field.key}
-              label={field.label}
-              type="number"
-              step="0.1"
-              value={metricValues[field.key] || ''}
-              onChange={(e) => setMetric(field.key, e.target.value)}
-            />
-          ))}
-        </div>
+        <MetricMeasurementTable
+          rows={CIRCUMFERENCE_METRIC_FIELDS.map((f) => ({ key: f.key, label: f.label }))}
+          values={metricValues}
+          onChange={setMetric}
+        />
       </Section>
 
       <Section title="Trainer notes">
