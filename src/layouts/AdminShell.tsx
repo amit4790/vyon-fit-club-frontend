@@ -152,6 +152,8 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
         <a
           key={item.path}
           href={item.path}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={() => setIsNavOpen(false)}
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all min-h-[44px] text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
         >
