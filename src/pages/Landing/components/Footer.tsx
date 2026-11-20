@@ -130,8 +130,17 @@ export const LandingFooter: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-neutral-800/80 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
-          <p>
-            &copy; {new Date().getFullYear()} VYON FIT CLUB. All rights reserved.
+          <p className="text-center sm:text-left">
+            &copy; {new Date().getFullYear()} Vyon Fit Club ·{' '}
+            <span className="text-neutral-500">Powered by </span>
+            <a
+              href="https://asyncbiz.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+            >
+              AsyncBiz
+            </a>
           </p>
           
           <div className="flex items-center gap-4">

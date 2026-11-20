@@ -8,6 +8,7 @@ import {
   FileBarChart2,
   Inbox,
   LogOut,
+  Megaphone,
   Menu,
   Settings,
   User,
@@ -35,7 +36,11 @@ interface NavItem {
   path: string
   icon: ReactNode
   comingSoon?: boolean
+  /** Off-app product entry (future: gate with org entitlements instead of always-on). */
+  external?: boolean
 }
+
+const BROADCAST_APP_URL = 'https://broadcast.asyncbiz.com'
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <BarChart3 size={18} /> },
@@ -46,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Payments', path: '/admin/payments', icon: <CreditCard size={18} /> },
   { label: 'Attendance', path: '/admin/attendance', icon: <CalendarCheck2 size={18} /> },
   { label: 'Reports', path: '/admin/reports', icon: <FileBarChart2 size={18} /> },
+  { label: 'Broadcast', path: BROADCAST_APP_URL, icon: <Megaphone size={18} />, external: true },
 ]
 
 export default function AdminShell({ title, subtitle, userName, onLogout, children }: AdminShellProps) {
@@ -140,6 +146,20 @@ export default function AdminShell({ title, subtitle, userName, onLogout, childr
 
   const renderNavLink = (item: NavItem) => {
     const active = isActive(item.path)
+
+    if (item.external) {
+      return (
+        <a
+          key={item.path}
+          href={item.path}
+          onClick={() => setIsNavOpen(false)}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all min-h-[44px] text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
+        >
+          {item.icon}
+          <span>{item.label}</span>
+        </a>
+      )
+    }
 
     if (item.comingSoon) {
       return (
