@@ -137,7 +137,7 @@ export const LandingFooter: React.FC = () => {
               href="https://asyncbiz.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+              className="text-[#16B8C5] hover:text-[#1ec9d6] transition-colors font-medium"
             >
               AsyncBiz
             </a>
