@@ -20,6 +20,7 @@ import {
   PlanCatalogApiResponse,
   PlanOptionOperationApiResponse,
   SubscriptionOperationApiResponse,
+  SubscriptionRecord,
   TrainerDeleteApiResponse,
   TrainerDeviceSyncApiResponse,
   TrainerListApiResponse,
@@ -101,6 +102,17 @@ export const adminService = {
 
   assignSubscription: (memberId: number, payload: AssignSubscriptionPayload) =>
     httpClient.post<SubscriptionOperationApiResponse>(`/admin/members/${memberId}/subscriptions`, payload),
+
+  convertMembership: (memberId: number, payload: AssignSubscriptionPayload) =>
+    httpClient.post<SubscriptionOperationApiResponse>(
+      `/admin/members/${memberId}/subscriptions/convert`,
+      payload
+    ),
+
+  cancelSubscription: (subscriptionId: number) =>
+    httpClient.post<{ message: string; data: SubscriptionRecord }>(
+      `/admin/subscriptions/${subscriptionId}/cancel`
+    ),
 
   changeSubscriptionPlan: (subscriptionId: number, payload: ChangeSubscriptionPlanPayload) =>
     httpClient.patch<SubscriptionOperationApiResponse>(`/admin/subscriptions/${subscriptionId}/plan`, payload),

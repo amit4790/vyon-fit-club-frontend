@@ -121,6 +121,8 @@ export interface PlanOptionOperationApiResponse {
 
 export type SubscriptionDurationUnit = 'months' | 'days'
 
+export type SubscriptionAssignmentIntent = 'new' | 'renew' | 'conversion'
+
 export interface AssignSubscriptionPayload {
   plan_id: number
   start_date: string
@@ -128,6 +130,7 @@ export interface AssignSubscriptionPayload {
   duration_unit?: SubscriptionDurationUnit
   bonus_duration_value?: number
   bonus_duration_unit?: SubscriptionDurationUnit
+  assignment_intent?: SubscriptionAssignmentIntent
 }
 
 export interface ChangeSubscriptionPlanPayload {
@@ -454,6 +457,11 @@ export interface SubscriptionRecord {
   tax_amount: number
   total_amount: number
   payment_status: string
+  paused_at?: string | null
+  resumed_at?: string | null
+  remaining_days?: number | null
+  resume_after_subscription_id?: number | null
+  assignment_intent?: string | null
 }
 
 export type PaymentMode = 'cash' | 'upi' | 'card' | 'bank_transfer'

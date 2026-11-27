@@ -128,21 +128,21 @@ export default function Payment() {
         setCheckoutNote('Existing member profile reused for this checkout.')
       }
 
-      try {
-        await adminService.assignSubscription(memberId, {
-          plan_id: selectedPlan.plan_id,
-          start_date: new Date().toISOString().slice(0, 10),
-        })
-      } catch (assignErr: any) {
-        const assignApiError = ApiErrorHandler.parse(assignErr)
-        if (assignApiError.status !== 409) {
-          throw assignErr
-        }
-        setCheckoutNote('An active subscription already existed, so payment was applied to the latest invoice.')
-      }
+      await adminService.assignSubscription(memberId, {
+        plan_id: selectedPlan.plan_id,
+        start_date: new Date().toISOString().slice(0, 10),
+        assignment_intent: 'new',
+      })
 
       const subscriptionsResponse = await adminService.getMemberSubscriptions(memberId)
-      const latestSubscription = subscriptionsResponse.data[0]
+      const todayIso = new Date().toISOString().slice(0, 10)
+      const latestSubscription =
+        subscriptionsResponse.data.find(
+          (sub) =>
+            sub.status === 'active' &&
+            sub.start_date <= todayIso &&
+            sub.end_date >= todayIso
+        ) || subscriptionsResponse.data[0]
 
       const invoiceResponse = await adminService.getInvoices({
         page: 1,

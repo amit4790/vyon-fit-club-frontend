@@ -217,7 +217,12 @@ export default function AdminMembers() {
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false)
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false)
   const [subscriptionModalMode, setSubscriptionModalMode] = useState<SubscriptionModalMode>('assign')
+  const [subscriptionAssignmentIntent, setSubscriptionAssignmentIntent] = useState<
+    'new' | 'renew' | 'conversion'
+  >('new')
   const [changingSubscriptionId, setChangingSubscriptionId] = useState<number | null>(null)
+  const [changingSubscriptionPlanId, setChangingSubscriptionPlanId] = useState<number | null>(null)
+  const [changingSubscriptionIsEffective, setChangingSubscriptionIsEffective] = useState(false)
   const [isSubmittingMember, setIsSubmittingMember] = useState(false)
   const [isSubmittingSubscription, setIsSubmittingSubscription] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null)
@@ -560,9 +565,15 @@ export default function AdminMembers() {
     setIsMemberModalOpen(true)
   }
 
-  const openAssignSubscriptionModal = async (member: MemberRecord) => {
+  const openAssignSubscriptionModal = async (
+    member: MemberRecord,
+    assignmentIntent: 'new' | 'renew' | 'conversion' = 'new'
+  ) => {
     setSubscriptionModalMode('assign')
+    setSubscriptionAssignmentIntent(assignmentIntent)
     setChangingSubscriptionId(null)
+    setChangingSubscriptionPlanId(null)
+    setChangingSubscriptionIsEffective(false)
     setSubscriptionMember(member)
     setSubscriptionFormError(null)
     setSubscriptionStartDate(new Date().toISOString().slice(0, 10))
@@ -578,6 +589,15 @@ export default function AdminMembers() {
   const openChangePlanModal = async (member: MemberRecord, subscription: SubscriptionRecord) => {
     setSubscriptionModalMode('change')
     setChangingSubscriptionId(subscription.id)
+    setChangingSubscriptionPlanId(subscription.plan_id)
+    const todayIso = new Date().toISOString().slice(0, 10)
+    setChangingSubscriptionIsEffective(
+      subscription.status === 'active' &&
+        !!subscription.start_date &&
+        !!subscription.end_date &&
+        subscription.start_date <= todayIso &&
+        subscription.end_date >= todayIso
+    )
     setSubscriptionMember(member)
     setSubscriptionFormError(null)
     setSubscriptionStartDate(subscription.start_date || new Date().toISOString().slice(0, 10))
@@ -616,12 +636,15 @@ export default function AdminMembers() {
     setIsSubscriptionModalOpen(false)
     setSubscriptionModalMode('assign')
     setChangingSubscriptionId(null)
+    setChangingSubscriptionPlanId(null)
+    setChangingSubscriptionIsEffective(false)
     setSubscriptionMember(null)
     setSelectedPlanId('')
     setSubscriptionDurationValue('1')
     setSubscriptionDurationUnit('months')
     setSubscriptionBonusValue('')
     setSubscriptionBonusUnit('months')
+    setSubscriptionAssignmentIntent('new')
     setSubscriptionFormError(null)
   }
 
@@ -631,7 +654,7 @@ export default function AdminMembers() {
       const response = await adminService.getMemberSubscriptions(memberId)
       const today = new Date().toISOString().slice(0, 10)
       const active = (response.data || []).filter(
-        (item) => item.status === 'active' && item.end_date >= today
+        (item) => item.status === 'active' && item.start_date <= today && item.end_date >= today
       )
       setEditMemberSubscriptions(active)
     } catch {
@@ -918,23 +941,37 @@ export default function AdminMembers() {
           return
         }
 
-        const response = await adminService.changeSubscriptionPlan(changingSubscriptionId, {
-          plan_id: Number(selectedPlanId),
+        const planId = Number(selectedPlanId)
+        const tierChange =
+          changingSubscriptionPlanId != null && planId !== changingSubscriptionPlanId
+        const conversionPayload = {
+          plan_id: planId,
           start_date: subscriptionStartDate,
           duration_value: parsedDurationValue,
           duration_unit: subscriptionDurationUnit,
           ...bonusPayload,
-        })
+        }
 
-        success('Membership updated', `Plan updated for ${subscriptionMember.full_name}`)
+        const response =
+          tierChange && changingSubscriptionIsEffective
+            ? await adminService.convertMembership(subscriptionMember.id, conversionPayload)
+            : await adminService.changeSubscriptionPlan(changingSubscriptionId, conversionPayload)
+
+        success(
+          tierChange && changingSubscriptionIsEffective ? 'Membership converted' : 'Membership updated',
+          tierChange && changingSubscriptionIsEffective
+            ? `Plan converted for ${subscriptionMember.full_name}`
+            : `Plan updated for ${subscriptionMember.full_name}`
+        )
         closeAssignSubscriptionModal()
         closeViewMembershipModal()
         closeMemberModal()
         await loadMembers(memberPage, activeSearch, false)
         await loadExpiringSubscriptions(expiringDays)
 
+        const paymentSubscriptionId = response.data.id
         if ((response.data.payment_status || '').toLowerCase() !== 'paid') {
-          navigate(`/admin/subscriptions/${response.data.id}/payment`, {
+          navigate(`/admin/subscriptions/${paymentSubscriptionId}/payment`, {
             state: {
               subscription: response.data,
               memberName: subscriptionMember.full_name,
@@ -949,6 +986,7 @@ export default function AdminMembers() {
         start_date: subscriptionStartDate,
         duration_value: parsedDurationValue,
         duration_unit: subscriptionDurationUnit,
+        assignment_intent: subscriptionAssignmentIntent,
         ...bonusPayload,
       })
 
@@ -1165,7 +1203,10 @@ export default function AdminMembers() {
             openViewMembershipModal(member)
             return
           }
-          openAssignSubscriptionModal(member)
+          openAssignSubscriptionModal(
+            member,
+            membership.action === 'renew' ? 'renew' : 'new'
+          )
         }}
       >
         {membership.action === 'pay'
@@ -1461,7 +1502,10 @@ export default function AdminMembers() {
                               return
                             }
 
-                            openAssignSubscriptionModal(member)
+                            openAssignSubscriptionModal(
+                              member,
+                              membership.action === 'renew' ? 'renew' : 'new'
+                            )
                           }}
                         >
                           {membership.action === 'pay'
@@ -1790,7 +1834,7 @@ export default function AdminMembers() {
               <div>
                 <p className="text-sm font-semibold text-text-secondary">Active Memberships</p>
                 <p className="text-xs text-text-secondary">
-                  Change an existing plan or add another concurrent membership.
+                  Change plan details or add another plan (pauses the current term when applicable).
                 </p>
               </div>
               <Button
@@ -1801,7 +1845,7 @@ export default function AdminMembers() {
                   if (!member) {
                     return
                   }
-                  void openAssignSubscriptionModal(member)
+                  void openAssignSubscriptionModal(member, 'new')
                 }}
               >
                 Add Plan
@@ -1993,7 +2037,7 @@ export default function AdminMembers() {
                 onClick={() => {
                   const member = viewMembershipMember
                   closeViewMembershipModal()
-                  void openAssignSubscriptionModal(member)
+                  void openAssignSubscriptionModal(member, 'new')
                 }}
               >
                 Add Plan
@@ -2037,7 +2081,7 @@ export default function AdminMembers() {
                 onClick={() => {
                   const member = viewMembershipMember
                   closeViewMembershipModal()
-                  openAssignSubscriptionModal(member)
+                  openAssignSubscriptionModal(member, 'renew')
                 }}
               >
                 Renew Membership
